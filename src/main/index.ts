@@ -1,5 +1,10 @@
+import type { Message as BedrockMessage } from '@aws-sdk/client-bedrock-runtime';
+import {
+  BedrockRuntimeClient,
+  ConverseStreamCommand,
+} from '@aws-sdk/client-bedrock-runtime';
 import { is } from '@electron-toolkit/utils';
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, ipcMain } from 'electron';
 import { join } from 'path';
 
 function createWindow() {
@@ -7,6 +12,8 @@ function createWindow() {
     width: 1280,
     height: 720,
     webPreferences: {
+      contextIsolation: false,
+      nodeIntegration: true,
       preload: join(__dirname, '../preload/index.js'),
     },
   });
@@ -21,7 +28,25 @@ function createWindow() {
   // mainWindow.webContents.openDevTools();
 }
 
-app.whenReady().then(() => {
+ipcMain.handle('chat', async (event, messages: BedrockMessage[]) => {
+  const client = new BedrockRuntimeClient({ region: 'us-west-2' });
+  const command = new ConverseStreamCommand({
+    modelId: 'anthropic.claude-3-sonnet-20240229-v1:0',
+    messages,
+  });
+
+  const response = await client.send(command);
+
+  if (response.stream) {
+    for await (const data of response.stream) {
+      event.sender.send('responseEvent', data);
+    }
+  }
+
+  return response.$metadata;
+});
+
+void app.whenReady().then(() => {
   createWindow();
 
   app.on('activate', function () {

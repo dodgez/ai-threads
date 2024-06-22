@@ -3,12 +3,15 @@ import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import Message from './Message';
 import Suggestion from './Suggestion';
 import type { ChatMessage } from '../types/ChatMessage';
 import { ChatMessageType } from '../types/ChatMessage';
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const electron = require('electron');
 
 export default function Thread() {
   const [messages, _setMessages] = useState<ChatMessage[]>([
@@ -23,6 +26,15 @@ export default function Thread() {
       type: ChatMessageType.Bot,
     },
   ]);
+
+  const send = useCallback(async () => {
+    electron.ipcRenderer.on('responseEvent', (_event, data) => {
+      console.log(data);
+    });
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const response = await electron.ipcRenderer.invoke('chat', 'Hello');
+    console.log(response);
+  }, []);
 
   return (
     <Box
@@ -62,7 +74,7 @@ export default function Thread() {
       )}
       <Box alignItems="end" display="flex" flexShrink={0}>
         <TextField fullWidth multiline placeholder="Ask a question" />
-        <IconButton>
+        <IconButton onClick={() => void send()}>
           <ArrowUpwardRounded />
         </IconButton>
       </Box>
