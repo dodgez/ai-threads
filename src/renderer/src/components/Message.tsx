@@ -14,7 +14,7 @@ export default function Message({ message }: { message: BedrockMessage }) {
         color: (theme) =>
           theme.palette.getContrastText(theme.palette.primary.main),
         marginLeft: 'auto !important',
-        maxWidth: 'sm',
+        maxWidth: 'md',
         p: 2,
       }}
     >
@@ -26,7 +26,7 @@ export default function Message({ message }: { message: BedrockMessage }) {
       <Paper
         elevation={2}
         sx={{
-          maxWidth: 'sm',
+          maxWidth: 'md',
           p: 2,
         }}
       >

@@ -26,6 +26,9 @@ export default function Thread() {
   const [newMessage, setNewMessage] = useState('');
   const latestMessage = useRef<MessageType>();
 
+  // Used for scrolling messages into view
+  const bottomRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     const callback = (_: IpcRendererEvent, data: ConverseStreamOutput) => {
       if (data.messageStart) {
@@ -65,6 +68,9 @@ export default function Thread() {
                 latestMessage.current!,
               ];
               return [...threads];
+            });
+            bottomRef.current?.scrollIntoView({
+              behavior: 'instant',
             });
           }
         }
@@ -117,11 +123,12 @@ export default function Thread() {
       mx="auto"
     >
       {thread?.messages && thread.messages.length > 0 ? (
-        <Container maxWidth="md" sx={{ flexGrow: 1, p: 2 }}>
+        <Container maxWidth="lg" sx={{ flexGrow: 1, p: 2 }}>
           <Stack spacing={2}>
             {thread.messages.map((message) => (
               <Message key={message.id} message={message} />
             ))}
+            <Box mt="0px !important" ref={bottomRef} />
           </Stack>
         </Container>
       ) : (
