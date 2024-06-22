@@ -1,7 +1,4 @@
-import type {
-  Message as BedrockMessage,
-  ConverseStreamOutput,
-} from '@aws-sdk/client-bedrock-runtime';
+import type { ConverseStreamOutput } from '@aws-sdk/client-bedrock-runtime';
 import { ConversationRole } from '@aws-sdk/client-bedrock-runtime';
 import ArrowUpwardRounded from '@mui/icons-material/ArrowUpwardRounded';
 import Box from '@mui/material/Box';
@@ -17,16 +14,17 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import Message from './Message';
 import Suggestion from './Suggestion';
+import type { MessageType } from '../ThreadProvider';
+import { useThreads } from '../ThreadProvider';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const electron = require('electron');
 
 export default function Thread() {
+  const { threads, setThreads, activeThread } = useThreads();
+  const thread = threads.find((thread) => thread.id === activeThread);
   const [newMessage, setNewMessage] = useState('');
-  const [messages, setMessages] = useState<(BedrockMessage & { id: string })[]>(
-    [],
-  );
-  const latestMessage = useRef<BedrockMessage & { id: string }>();
+  const latestMessage = useRef<MessageType>();
 
   useEffect(() => {
     const callback = (_: IpcRendererEvent, data: ConverseStreamOutput) => {
@@ -36,8 +34,12 @@ export default function Thread() {
           content: [{ text: '' }],
           id: Date.now().toString(),
         };
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-        setMessages((messages) => [...messages, latestMessage.current!]);
+        setThreads((threads) => {
+          const thread = threads.find((thread) => thread.id === activeThread);
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          thread?.messages.push(latestMessage.current!);
+          return [...threads];
+        });
       } else if (data.contentBlockDelta) {
         if (
           latestMessage.current?.content &&
@@ -52,11 +54,18 @@ export default function Thread() {
             data.contentBlockDelta.delta?.text !== undefined
           ) {
             contentBlock.text += data.contentBlockDelta.delta.text;
-            setMessages((messages) => [
-              ...messages.slice(0, messages.length - 1),
+            setThreads((threads) => {
               // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-              latestMessage.current!,
-            ]);
+              const thread = threads.find(
+                (thread) => thread.id === activeThread,
+              )!;
+              thread.messages = [
+                ...thread.messages.slice(0, thread.messages.length - 1),
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                latestMessage.current!,
+              ];
+              return [...threads];
+            });
           }
         }
       } else if (data.messageStop) {
@@ -68,31 +77,27 @@ export default function Thread() {
     return () => {
       electron.ipcRenderer.removeListener('responseEvent', callback);
     };
-  }, []);
+  }, [activeThread, setThreads]);
 
   const [loading, setLoading] = useState(false);
   const send = useCallback(async () => {
+    if (!thread) {
+      return;
+    }
     setLoading(true);
-    setMessages((messages) => [
-      ...messages,
-      {
-        role: ConversationRole.USER,
-        content: [{ text: newMessage }],
-        id: Date.now().toString(),
-      },
-    ]);
+    thread.messages.push({
+      role: ConversationRole.USER,
+      content: [{ text: newMessage }],
+      id: Date.now().toString(),
+    });
     setNewMessage('');
     await electron.ipcRenderer.invoke('chat', [
-      ...messages.map((message) => ({
+      ...thread.messages.map((message) => ({
         role: message.role,
         content: message.content,
       })),
-      {
-        role: ConversationRole.USER,
-        content: [{ text: newMessage }],
-      },
     ]);
-  }, [messages, newMessage]);
+  }, [thread, newMessage]);
 
   const theme = useTheme();
   const mdMediaQuery = useMediaQuery(theme.breakpoints.up('md'));
@@ -106,10 +111,10 @@ export default function Thread() {
       height="100%"
       mx="auto"
     >
-      {messages.length > 0 ? (
+      {thread?.messages && thread.messages.length > 0 ? (
         <Container maxWidth="md" sx={{ flexGrow: 1, p: 2 }}>
           <Stack spacing={2}>
-            {messages.map((message) => (
+            {thread.messages.map((message) => (
               <Message key={message.id} message={message} />
             ))}
           </Stack>

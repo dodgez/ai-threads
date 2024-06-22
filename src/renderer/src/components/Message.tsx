@@ -3,6 +3,7 @@ import { ConversationRole } from '@aws-sdk/client-bedrock-runtime';
 import Box from '@mui/material/Box';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
+import ReactMarkdown from 'react-markdown';
 
 export default function Message({ message }: { message: BedrockMessage }) {
   return message.role === ConversationRole.USER ? (
@@ -25,11 +26,12 @@ export default function Message({ message }: { message: BedrockMessage }) {
       <Paper
         elevation={2}
         sx={{
+          maxWidth: 'sm',
           p: 2,
         }}
       >
         {/* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */}
-        <Typography>{message.content![0].text!}</Typography>
+        <ReactMarkdown>{message.content![0].text!}</ReactMarkdown>
       </Paper>
     </Box>
   );
