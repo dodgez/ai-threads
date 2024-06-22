@@ -91,12 +91,17 @@ export default function Thread() {
       id: Date.now().toString(),
     });
     setNewMessage('');
-    await electron.ipcRenderer.invoke('chat', [
+    const response = await electron.ipcRenderer.invoke('chat', [
       ...thread.messages.map((message) => ({
         role: message.role,
         content: message.content,
       })),
     ]);
+    if ((response as { httpStatusCode: number }).httpStatusCode !== 200) {
+      setLoading(false);
+      thread.messages.pop();
+      alert('An unexpected error occurred.');
+    }
   }, [thread, newMessage]);
 
   const theme = useTheme();

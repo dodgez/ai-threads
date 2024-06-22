@@ -34,15 +34,19 @@ ipcMain.handle('chat', async (event, messages: BedrockMessage[]) => {
     messages,
   });
 
-  const response = await client.send(command);
+  try {
+    const response = await client.send(command);
 
-  if (response.stream) {
-    for await (const data of response.stream) {
-      event.sender.send('responseEvent', data);
+    if (response.stream) {
+      for await (const data of response.stream) {
+        event.sender.send('responseEvent', data);
+      }
     }
-  }
 
-  return response.$metadata;
+    return response.$metadata;
+  } catch (e) {
+    return (e as { $metadata: Record<string, unknown> }).$metadata;
+  }
 });
 
 void app.whenReady().then(() => {
