@@ -24,7 +24,7 @@ export default function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Box display="flex">
+      <Box display="flex" height="100vh">
         <Drawer
           anchor="left"
           sx={{

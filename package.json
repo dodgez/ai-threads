@@ -7,8 +7,7 @@
   "version": "0.0.0",
   "main": "./out/main/index.js",
   "scripts": {
-    "build": "tsc && vite build && cp main.js dist/main.js && cp package.json dist/package.json",
-    "build:mac": "electron-vite build && electron-builder --mac",
+    "build": "electron-vite build && electron-builder --mac",
     "dev": "electron-vite dev",
     "electron:dev": "npm run dev & electron .",
     "electron": "electron dist",

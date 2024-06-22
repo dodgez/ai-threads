@@ -18,7 +18,6 @@ function createWindow() {
     },
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
   if (is.dev && process.env.ELECTRON_RENDERER_URL) {
     void mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL);
   } else {
@@ -55,6 +54,5 @@ void app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', function () {
-  // eslint-disable-next-line no-undef
   if (process.platform !== 'darwin') app.quit();
 });
