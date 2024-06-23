@@ -5,7 +5,6 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import { useMemo } from 'react';
 
 import Layout from './components/Layout';
-import ThreadProvider from './ThreadProvider';
 
 export default function App() {
   const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
@@ -21,10 +20,8 @@ export default function App() {
 
   return (
     <ThemeProvider theme={theme}>
-      <ThreadProvider>
-        <CssBaseline />
-        <Layout />
-      </ThreadProvider>
+      <CssBaseline />
+      <Layout />
     </ThemeProvider>
   );
 }

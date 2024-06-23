@@ -9,12 +9,20 @@ import TextField from '@mui/material/TextField';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useState } from 'react';
 
-import type { ThreadType } from '../ThreadProvider';
-import { useThreads } from '../ThreadProvider';
+import type { ThreadType } from '../useThreadStore';
+import { useThreadStore } from '../useThreadStore';
 
-export default function ThreadButton({ thread }: { thread: ThreadType }) {
-  const { setThreads, deleteThread, activeThread, setActiveThread } =
-    useThreads();
+export default function ThreadButton({
+  activeThread,
+  onClick,
+  thread,
+}: {
+  activeThread?: ThreadType;
+  onClick: () => void;
+  thread: ThreadType;
+}) {
+  const renameThread = useThreadStore((state) => state.renameThread);
+  const deleteThread = useThreadStore((state) => state.deleteThread);
   const [hovered, setHovered] = useState(false);
   const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
   const [editing, setEditing] = useState(false);
@@ -30,12 +38,10 @@ export default function ThreadButton({ thread }: { thread: ThreadType }) {
       }}
     >
       <Button
-        onClick={() => {
-          setActiveThread(thread.id);
-        }}
+        onClick={onClick}
         sx={{
           backgroundColor: (theme) =>
-            thread.id === activeThread
+            thread.id === activeThread?.id
               ? prefersDarkMode
                 ? theme.palette.grey[900]
                 : theme.palette.grey[100]
@@ -82,14 +88,7 @@ export default function ThreadButton({ thread }: { thread: ThreadType }) {
       />
       <IconButton
         onClick={() => {
-          setThreads((threads) => {
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            const updatedThread = threads.find(
-              (thread2) => thread2.id === thread.id,
-            )!;
-            updatedThread.name = newName;
-            return [...threads];
-          });
+          renameThread(thread.id, newName);
           setEditing(false);
         }}
       >

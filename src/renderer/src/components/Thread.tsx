@@ -1,4 +1,7 @@
-import type { ConverseStreamOutput } from '@aws-sdk/client-bedrock-runtime';
+import type {
+  ContentBlock,
+  ConverseStreamOutput,
+} from '@aws-sdk/client-bedrock-runtime';
 import { ConversationRole } from '@aws-sdk/client-bedrock-runtime';
 import ArrowUpwardRounded from '@mui/icons-material/ArrowUpwardRounded';
 import Box from '@mui/material/Box';
@@ -6,25 +9,29 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Container from '@mui/material/Container';
 import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
-import useTheme from '@mui/material/styles/useTheme';
 import TextField from '@mui/material/TextField';
-import useMediaQuery from '@mui/material/useMediaQuery';
 import type { IpcRendererEvent } from 'electron';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { v4 as uuid } from 'uuid';
 
 import Message from './Message';
-import Suggestion from './Suggestion';
-import type { MessageType } from '../ThreadProvider';
-import { useThreads } from '../ThreadProvider';
+import type { MessageType, ThreadType } from '../useThreadStore';
+import { useThreadStore } from '../useThreadStore';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const electron = require('electron');
 
-export default function Thread() {
-  const { threads, setThreads, activeThread } = useThreads();
-  const thread = threads.find((thread) => thread.id === activeThread);
+export default function Thread({
+  created,
+  thread,
+}: {
+  created: boolean;
+  thread: ThreadType;
+}) {
+  const addMessage = useThreadStore((state) => state.addMessage);
   const [newMessage, setNewMessage] = useState('');
-  const latestMessage = useRef<MessageType>();
+  const [streamingResponse, setStreamingResponse] =
+    useState<MessageType['content']>();
 
   // Used for scrolling messages into view
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -32,42 +39,26 @@ export default function Thread() {
   useEffect(() => {
     const callback = (_: IpcRendererEvent, data: ConverseStreamOutput) => {
       if (data.messageStart) {
-        latestMessage.current = {
-          role: data.messageStart.role,
-          content: [{ text: '' }],
-          id: Date.now().toString(),
-        };
-        setThreads((threads) => {
-          const thread = threads.find((thread) => thread.id === activeThread);
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          thread?.messages.push(latestMessage.current!);
-          return [...threads];
-        });
+        setStreamingResponse([{ text: '' }]);
       } else if (data.contentBlockDelta) {
-        if (
-          latestMessage.current?.content &&
-          data.contentBlockDelta.contentBlockIndex !== undefined
-        ) {
-          const contentBlock =
-            latestMessage.current.content[
-              data.contentBlockDelta.contentBlockIndex
-            ];
-          if (
-            contentBlock.text !== undefined &&
-            data.contentBlockDelta.delta?.text !== undefined
-          ) {
-            contentBlock.text += data.contentBlockDelta.delta.text;
-            setThreads((threads) => {
-              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-              const thread = threads.find(
-                (thread) => thread.id === activeThread,
-              )!;
-              thread.messages = [
-                ...thread.messages.slice(0, thread.messages.length - 1),
-                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                latestMessage.current!,
+        if (data.contentBlockDelta.contentBlockIndex !== undefined) {
+          if (data.contentBlockDelta.delta?.text !== undefined) {
+            const index = data.contentBlockDelta.contentBlockIndex;
+            const text = data.contentBlockDelta.delta.text.toString();
+            setStreamingResponse((res) => {
+              if (!res) return res;
+
+              const response = [
+                ...res.map((cb) => ({ text: cb.text }) as ContentBlock),
               ];
-              return [...threads];
+              if (response[index].text === undefined) {
+                response[index].text = text;
+              } else {
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                response[index].text! += text;
+              }
+
+              return response;
             });
             bottomRef.current?.scrollIntoView({
               behavior: 'instant',
@@ -76,6 +67,15 @@ export default function Thread() {
         }
       } else if (data.messageStop) {
         setLoading(false);
+        // TODO: hack add message by piggy-backing on state change
+        setStreamingResponse((res) => {
+          addMessage(thread.id, {
+            role: ConversationRole.ASSISTANT,
+            content: res,
+            id: uuid(),
+          });
+          return undefined;
+        });
       }
     };
     electron.ipcRenderer.on('responseEvent', callback);
@@ -83,36 +83,54 @@ export default function Thread() {
     return () => {
       electron.ipcRenderer.removeListener('responseEvent', callback);
     };
-  }, [activeThread, setThreads]);
+  }, [addMessage, thread.id]);
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(created);
   const send = useCallback(async () => {
-    if (!thread) {
-      return;
-    }
     setLoading(true);
-    thread.messages.push({
+    const newMessageType = {
       role: ConversationRole.USER,
       content: [{ text: newMessage }],
-      id: Date.now().toString(),
-    });
+      id: uuid(),
+    };
+    addMessage(thread.id, newMessageType);
     setNewMessage('');
-    const response = await electron.ipcRenderer.invoke('chat', [
-      ...thread.messages.map((message) => ({
-        role: message.role,
-        content: message.content,
-      })),
-    ]);
-    if ((response as { httpStatusCode: number }).httpStatusCode !== 200) {
+    const response = void (await electron.ipcRenderer.invoke(
+      'chat',
+      thread.messages
+        .map((message) => ({
+          role: message.role,
+          content: message.content,
+        }))
+        .concat(newMessageType),
+    ));
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    if ((response! as { httpStatusCode: number }).httpStatusCode !== 200) {
       setLoading(false);
       thread.messages.pop();
-      alert('An unexpected error occurred.');
+      alert(JSON.stringify(response));
     }
-  }, [thread, newMessage]);
+  }, [addMessage, thread, newMessage]);
 
-  const theme = useTheme();
-  const mdMediaQuery = useMediaQuery(theme.breakpoints.up('md'));
-  const lgMediaQuery = useMediaQuery(theme.breakpoints.up('lg'));
+  // Execute call when thread first created
+  const needsTrigger = useRef(created);
+  if (needsTrigger.current) {
+    needsTrigger.current = false;
+    void electron.ipcRenderer
+      .invoke(
+        'chat',
+        thread.messages.map((message) => ({
+          role: message.role,
+          content: message.content,
+        })),
+      )
+      .then((response) => {
+        if ((response as { httpStatusCode: number }).httpStatusCode !== 200) {
+          setLoading(false);
+          alert(JSON.stringify(response));
+        }
+      });
+  }
 
   return (
     <Box
@@ -122,37 +140,22 @@ export default function Thread() {
       height="100%"
       mx="auto"
     >
-      {thread?.messages && thread.messages.length > 0 ? (
-        <Container maxWidth="lg" sx={{ flexGrow: 1, p: 2 }}>
-          <Stack spacing={2}>
-            {thread.messages.map((message) => (
-              <Message key={message.id} message={message} />
-            ))}
-            <Box mt="0px !important" ref={bottomRef} />
-          </Stack>
-        </Container>
-      ) : (
-        <Box alignContent="center" flexGrow={1}>
-          <Box display="flex" flexDirection="row" justifyContent="space-around">
-            <Suggestion
-              header="Programming"
-              suggestion="Implement FizzBuzz in JavaScript."
+      <Container maxWidth="lg" sx={{ flexGrow: 1, p: 2 }}>
+        <Stack spacing={2}>
+          {thread.messages.map((message) => (
+            <Message key={message.id} message={message} />
+          ))}
+          {streamingResponse && (
+            <Message
+              message={{
+                role: ConversationRole.ASSISTANT,
+                content: streamingResponse,
+              }}
             />
-            {mdMediaQuery && (
-              <Suggestion
-                header="Science"
-                suggestion="How many planets are in the Solar System?"
-              />
-            )}
-            {lgMediaQuery && (
-              <Suggestion
-                header="Literature"
-                suggestion="Write a Haiku about Rabbits."
-              />
-            )}
-          </Box>
-        </Box>
-      )}
+          )}
+          <Box mt="0px !important" ref={bottomRef} />
+        </Stack>
+      </Container>
       <Box
         alignItems="end"
         bottom={0}
