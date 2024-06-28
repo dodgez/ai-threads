@@ -15,7 +15,7 @@ import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import type { AwsCredentialIdentity } from '@smithy/types';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { v4 as uuid } from 'uuid';
 
 import Message from './Message';
@@ -90,11 +90,13 @@ export default function Thread({
           setLoading(false);
           // TODO: hack add message by piggy-backing on state change
           setStreamingResponse((res) => {
-            addMessage(thread.id, {
-              role: ConversationRole.ASSISTANT,
-              content: res,
-              id: uuid(),
-            });
+            setTimeout(() => {
+              addMessage(thread.id, {
+                role: ConversationRole.ASSISTANT,
+                content: res,
+                id: uuid(),
+              });
+            }, 0);
             return undefined;
           });
         }
@@ -122,6 +124,12 @@ export default function Thread({
     needsTrigger.current = false;
     void sendMessages(thread.messages);
   }
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({
+      behavior: 'instant',
+    });
+  }, [thread.messages]);
 
   return (
     <Box
