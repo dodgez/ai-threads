@@ -1,8 +1,12 @@
 import type {
+  Message as BedrockMessage,
   ContentBlock,
-  ConverseStreamOutput,
 } from '@aws-sdk/client-bedrock-runtime';
-import { ConversationRole } from '@aws-sdk/client-bedrock-runtime';
+import {
+  BedrockRuntimeClient,
+  ConversationRole,
+  ConverseStreamCommand,
+} from '@aws-sdk/client-bedrock-runtime';
 import ArrowUpwardRounded from '@mui/icons-material/ArrowUpwardRounded';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -10,8 +14,8 @@ import Container from '@mui/material/Container';
 import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
-import type { IpcRendererEvent } from 'electron';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import type { AwsCredentialIdentity } from '@smithy/types';
+import { useCallback, useRef, useState } from 'react';
 import { v4 as uuid } from 'uuid';
 
 import Message from './Message';
@@ -36,57 +40,71 @@ export default function Thread({
   // Used for scrolling messages into view
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const callback = (_: IpcRendererEvent, data: ConverseStreamOutput) => {
-      if (data.messageStart) {
-        setStreamingResponse([{ text: '' }]);
-      } else if (data.contentBlockDelta) {
-        if (data.contentBlockDelta.contentBlockIndex !== undefined) {
-          if (data.contentBlockDelta.delta?.text !== undefined) {
-            const index = data.contentBlockDelta.contentBlockIndex;
-            const text = data.contentBlockDelta.delta.text.toString();
-            setStreamingResponse((res) => {
-              if (!res) return res;
+  const sendMessages = useCallback(
+    async (messages: BedrockMessage[]) => {
+      const creds = (await electron.ipcRenderer.invoke(
+        'creds',
+      )) as AwsCredentialIdentity;
 
-              const response = [
-                ...res.map((cb) => ({ text: cb.text }) as ContentBlock),
-              ];
-              if (response[index].text === undefined) {
-                response[index].text = text;
-              } else {
-                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                response[index].text! += text;
-              }
+      const client = new BedrockRuntimeClient({
+        credentials: creds,
+        region: 'us-west-2',
+      });
+      const command = new ConverseStreamCommand({
+        modelId: 'anthropic.claude-3-sonnet-20240229-v1:0',
+        messages,
+      });
 
-              return response;
-            });
-            bottomRef.current?.scrollIntoView({
-              behavior: 'instant',
-            });
+      const stream = (await client.send(command)).stream;
+
+      if (!stream) return;
+      for await (const data of stream) {
+        if (data.messageStart) {
+          setStreamingResponse([{ text: '' }]);
+        } else if (data.contentBlockDelta) {
+          if (data.contentBlockDelta.contentBlockIndex !== undefined) {
+            if (data.contentBlockDelta.delta?.text !== undefined) {
+              const index = data.contentBlockDelta.contentBlockIndex;
+              const text = data.contentBlockDelta.delta.text.toString();
+              setStreamingResponse((res) => {
+                if (!res) return res;
+
+                const response = [
+                  ...res.map((cb) => ({ text: cb.text }) as ContentBlock),
+                ];
+                if (response[index].text === undefined) {
+                  response[index].text = text;
+                } else {
+                  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                  response[index].text! += text;
+                }
+
+                return response;
+              });
+              bottomRef.current?.scrollIntoView({
+                behavior: 'instant',
+              });
+            }
           }
-        }
-      } else if (data.messageStop) {
-        setLoading(false);
-        // TODO: hack add message by piggy-backing on state change
-        setStreamingResponse((res) => {
-          addMessage(thread.id, {
-            role: ConversationRole.ASSISTANT,
-            content: res,
-            id: uuid(),
+        } else if (data.messageStop) {
+          setLoading(false);
+          // TODO: hack add message by piggy-backing on state change
+          setStreamingResponse((res) => {
+            addMessage(thread.id, {
+              role: ConversationRole.ASSISTANT,
+              content: res,
+              id: uuid(),
+            });
+            return undefined;
           });
-          return undefined;
-        });
+        }
       }
-    };
-    electron.ipcRenderer.on('responseEvent', callback);
-
-    return () => {
-      electron.ipcRenderer.removeListener('responseEvent', callback);
-    };
-  }, [addMessage, thread.id]);
+    },
+    [addMessage, thread.id],
+  );
 
   const [loading, setLoading] = useState(created);
-  const send = useCallback(async () => {
+  const send = useCallback(() => {
     setLoading(true);
     const newMessageType = {
       role: ConversationRole.USER,
@@ -95,41 +113,14 @@ export default function Thread({
     };
     addMessage(thread.id, newMessageType);
     setNewMessage('');
-    const response = void (await electron.ipcRenderer.invoke(
-      'chat',
-      thread.messages
-        .map((message) => ({
-          role: message.role,
-          content: message.content,
-        }))
-        .concat(newMessageType),
-    ));
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    if ((response! as { httpStatusCode: number }).httpStatusCode !== 200) {
-      setLoading(false);
-      thread.messages.pop();
-      alert(JSON.stringify(response));
-    }
-  }, [addMessage, thread, newMessage]);
+    void sendMessages(thread.messages.concat(newMessageType));
+  }, [addMessage, newMessage, sendMessages, thread.id, thread.messages]);
 
   // Execute call when thread first created
   const needsTrigger = useRef(created);
   if (needsTrigger.current) {
     needsTrigger.current = false;
-    void electron.ipcRenderer
-      .invoke(
-        'chat',
-        thread.messages.map((message) => ({
-          role: message.role,
-          content: message.content,
-        })),
-      )
-      .then((response) => {
-        if ((response as { httpStatusCode: number }).httpStatusCode !== 200) {
-          setLoading(false);
-          alert(JSON.stringify(response));
-        }
-      });
+    void sendMessages(thread.messages);
   }
 
   return (
@@ -176,7 +167,7 @@ export default function Thread({
             if (event.key === 'Enter' && !event.shiftKey) {
               event.preventDefault();
               if (newMessage.trim()) {
-                void send();
+                send();
               }
             }
           }}
@@ -186,7 +177,7 @@ export default function Thread({
         {loading ? (
           <CircularProgress sx={{ padding: 1 }} />
         ) : (
-          <IconButton disabled={!newMessage.trim()} onClick={() => void send()}>
+          <IconButton disabled={!newMessage.trim()} onClick={send}>
             <ArrowUpwardRounded />
           </IconButton>
         )}
