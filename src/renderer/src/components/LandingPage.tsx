@@ -1,7 +1,11 @@
-import { ConversationRole } from '@aws-sdk/client-bedrock-runtime';
+import type { ImageBlock } from '@aws-sdk/client-bedrock-runtime';
+import { ConversationRole, ImageFormat } from '@aws-sdk/client-bedrock-runtime';
 import ArrowUpwardRounded from '@mui/icons-material/ArrowUpwardRounded';
 import Box from '@mui/material/Box';
+import Chip from '@mui/material/Chip';
+import Container from '@mui/material/Container';
 import IconButton from '@mui/material/IconButton';
+import Stack from '@mui/material/Stack';
 import useTheme from '@mui/material/styles/useTheme';
 import TextField from '@mui/material/TextField';
 import useMediaQuery from '@mui/material/useMediaQuery';
@@ -18,16 +22,24 @@ export default function LandingPage({
   onCreate: (id: ThreadType['id']) => void;
 }) {
   const createThread = useThreadStore((state) => state.createThread);
-  const [newMessage, setNewMessage] = useState('');
+  const [message, setMessage] = useState('');
+  const [images, setImages] = useState<
+    (ImageBlock & { id: string; name: string })[]
+  >([]);
 
   const send = useCallback(() => {
     const newId = createThread({
       role: ConversationRole.USER,
-      content: [{ text: newMessage }],
+      content: [
+        { text: message },
+        ...images.map((image) => ({
+          image,
+        })),
+      ],
       id: uuid(),
     });
     onCreate(newId);
-  }, [createThread, newMessage, onCreate]);
+  }, [createThread, images, message, onCreate]);
 
   const theme = useTheme();
   const mdMediaQuery = useMediaQuery(theme.breakpoints.up('md'));
@@ -64,37 +76,79 @@ export default function LandingPage({
       <Box
         alignItems="end"
         bottom={0}
-        display="flex"
         pb={2}
         position="sticky"
         px={2}
         sx={{ backgroundColor: (theme) => theme.palette.background.default }}
       >
-        <TextField
-          fullWidth
-          multiline
-          onChange={({ target }) => {
-            setNewMessage(target.value);
-          }}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' && !event.shiftKey) {
-              event.preventDefault();
-              if (newMessage.trim()) {
-                send();
+        <Box display="flex">
+          <TextField
+            fullWidth
+            multiline
+            onChange={({ target }) => {
+              setMessage(target.value);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                if (message.trim()) {
+                  send();
+                }
               }
-            }
-          }}
-          placeholder="Ask a question"
-          value={newMessage}
-        />
-        <IconButton
-          disabled={!newMessage.trim()}
-          onClick={() => {
-            send();
-          }}
-        >
-          <ArrowUpwardRounded />
-        </IconButton>
+            }}
+            onPaste={(event) => {
+              const data = event.clipboardData;
+              if (data.files.length > 0) {
+                for (const file of data.files) {
+                  if (file.type !== 'image/png') {
+                    alert(`Skipping unsupported file: ${file.type}`);
+                    continue;
+                  }
+                  void file.arrayBuffer().then((buffer) => {
+                    const bytes = new Uint8Array(buffer);
+                    setImages((images) =>
+                      images.concat({
+                        format: ImageFormat.PNG,
+                        source: {
+                          bytes,
+                        },
+                        id: uuid(),
+                        name: file.name,
+                      }),
+                    );
+                  });
+                }
+              }
+            }}
+            placeholder="Ask a question"
+            value={message}
+          />
+          <IconButton
+            disabled={!message.trim()}
+            onClick={() => {
+              send();
+            }}
+          >
+            <ArrowUpwardRounded />
+          </IconButton>
+        </Box>
+        {images.length > 0 && (
+          <Container maxWidth="md" sx={{ overflowX: 'auto', pt: 1 }}>
+            <Stack direction="row" spacing={1}>
+              {images.map((image) => (
+                <Chip
+                  key={image.id}
+                  label={image.name}
+                  onDelete={() => {
+                    setImages((images) =>
+                      images.filter((image2) => image2.id !== image.id),
+                    );
+                  }}
+                />
+              ))}
+            </Stack>
+          </Container>
+        )}
       </Box>
     </Box>
   );
