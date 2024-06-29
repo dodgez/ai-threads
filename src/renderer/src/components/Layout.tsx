@@ -1,5 +1,6 @@
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
 import Drawer from '@mui/material/Drawer';
 import Stack from '@mui/material/Stack';
 import { useCallback, useState } from 'react';
@@ -11,9 +12,10 @@ import type { ThreadType } from '../useThreadStore';
 import { useThreadStore } from '../useThreadStore';
 
 export default function Layout() {
+  const hasHydrated = useThreadStore((state) => state._hasHydrated);
   const threads = useThreadStore((state) => state.threads);
   const [activeThreadId, setActiveThreadId] = useState<ThreadType['id']>();
-  const activeThread = activeThreadId ? threads.get(activeThreadId) : undefined;
+  const activeThread = activeThreadId ? threads[activeThreadId] : undefined;
 
   // Pass to the thread to trigger call during screen transition
   const [lastCreatedThreadId, setLastCreatedThreadId] =
@@ -23,6 +25,19 @@ export default function Layout() {
     setLastCreatedThreadId(threadId);
     setActiveThreadId(threadId);
   }, []);
+
+  if (!hasHydrated) {
+    return (
+      <Box
+        alignItems="center"
+        display="flex"
+        height="100vh"
+        justifyContent="center"
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Box display="flex" height="100vh">
@@ -49,16 +64,21 @@ export default function Layout() {
           >
             New thread
           </Button>
-          {Array.from(threads).map(([_, thread]) => (
-            <ThreadButton
-              activeThread={activeThread}
-              key={thread.id}
-              onClick={() => {
-                setActiveThreadId(thread.id);
-              }}
-              thread={thread}
-            />
-          ))}
+          {Object.entries(threads).map(([_, thread]) => {
+            if (!thread) {
+              return null;
+            }
+            return (
+              <ThreadButton
+                activeThread={activeThread}
+                key={thread.id}
+                onClick={() => {
+                  setActiveThreadId(thread.id);
+                }}
+                thread={thread}
+              />
+            );
+          })}
         </Stack>
       </Drawer>
       {activeThread ? (
