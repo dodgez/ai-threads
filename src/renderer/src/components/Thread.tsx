@@ -1,6 +1,7 @@
 import type {
   Message as BedrockMessage,
   ContentBlock,
+  DocumentBlock,
   ImageBlock,
 } from '@aws-sdk/client-bedrock-runtime';
 import {
@@ -104,12 +105,15 @@ export default function Thread({
 
   const [loading, setLoading] = useState(created);
   const onSubmit = useCallback(
-    (message: string, images: ImageBlock[]) => {
+    (message: string, docs: DocumentBlock[], images: ImageBlock[]) => {
       setLoading(true);
       const newMessage = {
         role: ConversationRole.USER,
         content: [
           { text: message },
+          ...docs.map((doc) => ({
+            document: doc,
+          })),
           ...images.map((image) => ({
             image,
           })),

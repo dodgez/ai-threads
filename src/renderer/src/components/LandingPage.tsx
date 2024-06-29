@@ -1,4 +1,7 @@
-import type { ImageBlock } from '@aws-sdk/client-bedrock-runtime';
+import type {
+  DocumentBlock,
+  ImageBlock,
+} from '@aws-sdk/client-bedrock-runtime';
 import { ConversationRole } from '@aws-sdk/client-bedrock-runtime';
 import Box from '@mui/material/Box';
 import useTheme from '@mui/material/styles/useTheme';
@@ -19,11 +22,14 @@ export default function LandingPage({
   const createThread = useThreadStore((state) => state.createThread);
 
   const onSubmit = useCallback(
-    (message: string, images: ImageBlock[]) => {
+    (message: string, docs: DocumentBlock[], images: ImageBlock[]) => {
       const newId = createThread({
         role: ConversationRole.USER,
         content: [
           { text: message },
+          ...docs.map((doc) => ({
+            document: doc,
+          })),
           ...images.map((image) => ({
             image,
           })),
