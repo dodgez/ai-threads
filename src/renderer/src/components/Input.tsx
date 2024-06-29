@@ -12,6 +12,7 @@ import Container from '@mui/material/Container';
 import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
+import type { RefObject } from 'react';
 import { useCallback, useRef, useState } from 'react';
 import { v4 as uuid } from 'uuid';
 
@@ -37,9 +38,11 @@ const ImageMimeTypeMapping: Record<string, ImageFormat> = {
 };
 
 export default function Input({
+  inputRef,
   loading = false,
-  onSubmit: onSubmit,
+  onSubmit,
 }: {
+  inputRef?: RefObject<HTMLInputElement>;
   loading?: boolean;
   onSubmit: (
     message: string,
@@ -104,8 +107,10 @@ export default function Input({
     >
       <Box alignItems="center" display="flex">
         <TextField
+          autoFocus
           disabled={loading}
           fullWidth
+          inputRef={inputRef}
           multiline
           onChange={({ target }) => {
             setMessage(target.value);

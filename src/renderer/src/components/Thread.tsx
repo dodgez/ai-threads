@@ -38,6 +38,9 @@ export default function Thread({
   // Used for scrolling messages into view
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  // Used for focusing the input after response
+  const inputRef = useRef<HTMLInputElement>(null);
+
   const sendMessages = useCallback(
     async (messages: BedrockMessage[]) => {
       const creds = (await electron.ipcRenderer.invoke(
@@ -97,6 +100,7 @@ export default function Thread({
             }, 0);
             return undefined;
           });
+          setTimeout(() => inputRef.current?.focus(), 0);
         }
       }
     },
@@ -163,7 +167,7 @@ export default function Thread({
           <Box mt="0px !important" ref={bottomRef} />
         </Stack>
       </Container>
-      <Input loading={loading} onSubmit={onSubmit} />
+      <Input inputRef={inputRef} loading={loading} onSubmit={onSubmit} />
     </Box>
   );
 }
