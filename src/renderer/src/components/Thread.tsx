@@ -114,12 +114,14 @@ export default function Thread({
       const newMessage = {
         role: ConversationRole.USER,
         content: [
-          { text: message },
+          { text: message, id: uuid() },
           ...docs.map((doc) => ({
             document: doc,
+            id: uuid(),
           })),
           ...images.map((image) => ({
             image,
+            id: uuid(),
           })),
         ],
         id: uuid(),

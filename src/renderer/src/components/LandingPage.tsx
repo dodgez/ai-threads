@@ -1,4 +1,5 @@
 import type {
+  ContentBlock,
   DocumentBlock,
   ImageBlock,
 } from '@aws-sdk/client-bedrock-runtime';
@@ -26,12 +27,14 @@ export default function LandingPage({
       const newId = createThread({
         role: ConversationRole.USER,
         content: [
-          { text: message },
+          { text: message, id: uuid() } as ContentBlock,
           ...docs.map((doc) => ({
             document: doc,
+            id: uuid(),
           })),
           ...images.map((image) => ({
             image,
+            id: uuid(),
           })),
         ],
         id: uuid(),

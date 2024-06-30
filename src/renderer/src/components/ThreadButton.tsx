@@ -48,6 +48,7 @@ export default function ThreadButton({
               : undefined,
           color: (theme) => theme.palette.text.primary,
           p: 1,
+          textTransform: 'none',
           width: '100%',
         }}
       >

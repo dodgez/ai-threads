@@ -1,9 +1,18 @@
 import type { Message as BedrockMessage } from '@aws-sdk/client-bedrock-runtime';
+import {
+  BedrockRuntimeClient,
+  ConversationRole,
+  ConverseCommand,
+} from '@aws-sdk/client-bedrock-runtime';
+import type { AwsCredentialIdentity } from '@smithy/types';
 import { del, get, set } from 'idb-keyval';
 import { v4 as uuid } from 'uuid';
 import { create } from 'zustand';
 import type { StateStorage } from 'zustand/middleware';
 import { createJSONStorage, persist } from 'zustand/middleware';
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const electron = require('electron');
 
 export type MessageType = BedrockMessage & { id: string };
 export interface ThreadType {
@@ -49,6 +58,47 @@ export const useThreadStore = create<StoreState>()(
           };
           return { threads: newThreads };
         });
+
+        void (async () => {
+          if (!message.content?.[0].text) return 'New chat';
+          const messages = [
+            {
+              role: ConversationRole.USER,
+              content: [
+                {
+                  text: `Give a short phrase to describe this question: "${message.content[0].text}". Do not end the phrase with a period.`,
+                },
+              ],
+            },
+          ];
+          const creds = (await electron.ipcRenderer.invoke(
+            'creds',
+          )) as AwsCredentialIdentity;
+
+          const client = new BedrockRuntimeClient({
+            credentials: creds,
+            region: 'us-west-2',
+          });
+          const command = new ConverseCommand({
+            modelId: 'anthropic.claude-3-sonnet-20240229-v1:0',
+            messages,
+          });
+
+          const output = (await client.send(command)).output;
+          return output?.message?.content?.[0]?.text ?? 'New chat';
+        })().then((name) => {
+          set(({ threads }) => {
+            const newThreads = { ...threads };
+            if (!newThreads[id]) return { threads };
+            newThreads[id] = {
+              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+              ...newThreads[id]!,
+              name,
+            };
+            return { threads: newThreads };
+          });
+        });
+
         return id;
       },
       renameThread: (id: ThreadType['id'], name: string) => {

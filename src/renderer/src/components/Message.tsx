@@ -1,9 +1,28 @@
-import type { Message as BedrockMessage } from '@aws-sdk/client-bedrock-runtime';
+import type {
+  Message as BedrockMessage,
+  ContentBlock,
+  ImageBlock,
+} from '@aws-sdk/client-bedrock-runtime';
 import { ConversationRole } from '@aws-sdk/client-bedrock-runtime';
 import Box from '@mui/material/Box';
+import Chip from '@mui/material/Chip';
 import Paper from '@mui/material/Paper';
+import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import ReactMarkdown from 'react-markdown';
+
+function Content({ contentBlock }: { contentBlock: ContentBlock }) {
+  if (contentBlock.text) {
+    return <Typography>{contentBlock.text}</Typography>;
+  } else if (contentBlock.document) {
+    return <Chip color="info" label={contentBlock.document.name} />;
+  } else if (contentBlock.image) {
+    const image = contentBlock.image as ImageBlock & { name: string };
+    return <Chip color="info" label={image.name} />;
+  }
+
+  return null;
+}
 
 export default function Message({ message }: { message: BedrockMessage }) {
   return message.role === ConversationRole.USER ? (
@@ -18,8 +37,14 @@ export default function Message({ message }: { message: BedrockMessage }) {
         p: 2,
       }}
     >
-      {/* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */}
-      <Typography>{message.content![0].text!}</Typography>
+      <Stack spacing={1}>
+        {message.content?.map((cb) => (
+          <Content
+            contentBlock={cb}
+            key={(cb as ContentBlock & { id: string }).id}
+          />
+        ))}
+      </Stack>
     </Paper>
   ) : (
     <Box display="flex" flexDirection="row">
