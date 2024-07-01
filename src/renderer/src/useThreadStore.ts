@@ -32,6 +32,8 @@ const storage: StateStorage = {
 interface StoreState {
   _hasHydrated: boolean;
   setHasHydrated: (state: boolean) => void;
+  awsCredProfile?: string;
+  setAwsCredProfile: (state?: string) => void;
   threads: Record<ThreadType['id'], ThreadType | undefined>;
   createThread: (message: MessageType) => ThreadType['id'];
   renameThread: (id: ThreadType['id'], name: string) => void;
@@ -41,10 +43,14 @@ interface StoreState {
 
 export const useThreadStore = create<StoreState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       _hasHydrated: false,
       setHasHydrated: (state: boolean) => {
         set({ _hasHydrated: state });
+      },
+      awsCredProfile: undefined,
+      setAwsCredProfile: (state?: string) => {
+        set({ awsCredProfile: state });
       },
       threads: {},
       createThread: (message: MessageType) => {
@@ -71,8 +77,10 @@ export const useThreadStore = create<StoreState>()(
               ],
             },
           ];
+          const profile = get().awsCredProfile;
           const creds = (await electron.ipcRenderer.invoke(
             'creds',
+            profile,
           )) as AwsCredentialIdentity;
 
           const client = new BedrockRuntimeClient({

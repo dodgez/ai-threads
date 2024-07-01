@@ -27,7 +27,9 @@ function createWindow() {
   // mainWindow.webContents.openDevTools();
 }
 
-ipcMain.handle('creds', async (_event) => fromIni()());
+ipcMain.handle('creds', async (_event, profile?: string) =>
+  fromIni({ profile })(),
+);
 
 void app.whenReady().then(() => {
   createWindow();

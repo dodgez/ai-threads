@@ -3,6 +3,7 @@ import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
 import Drawer from '@mui/material/Drawer';
 import Stack from '@mui/material/Stack';
+import TextField from '@mui/material/TextField';
 import { useCallback, useState } from 'react';
 
 import LandingPage from './LandingPage';
@@ -13,6 +14,8 @@ import { useThreadStore } from '../useThreadStore';
 
 export default function Layout() {
   const hasHydrated = useThreadStore((state) => state._hasHydrated);
+  const awsCredProfile = useThreadStore((state) => state.awsCredProfile);
+  const setAwsCredProfile = useThreadStore((state) => state.setAwsCredProfile);
   const threads = useThreadStore((state) => state.threads);
   const [activeThreadId, setActiveThreadId] = useState<ThreadType['id']>();
   const activeThread = activeThreadId ? threads[activeThreadId] : undefined;
@@ -54,7 +57,7 @@ export default function Layout() {
         }}
         variant="permanent"
       >
-        <Stack spacing={2}>
+        <Stack spacing={2} sx={{ flexGrow: 1 }}>
           <Button
             disabled={!activeThread}
             onClick={() => {
@@ -80,6 +83,17 @@ export default function Layout() {
             );
           })}
         </Stack>
+        <TextField
+          onChange={({ target }) => {
+            if (target.value === '') {
+              setAwsCredProfile(undefined);
+            } else {
+              setAwsCredProfile(target.value);
+            }
+          }}
+          placeholder="AWS credentials profile"
+          value={awsCredProfile ?? ''}
+        />
       </Drawer>
       {activeThread ? (
         <Thread

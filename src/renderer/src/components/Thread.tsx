@@ -32,6 +32,7 @@ export default function Thread({
   thread: ThreadType;
 }) {
   const addMessage = useThreadStore((state) => state.addMessage);
+  const awsCredProfile = useThreadStore((state) => state.awsCredProfile);
   const [streamingResponse, setStreamingResponse] =
     useState<MessageType['content']>();
 
@@ -43,9 +44,13 @@ export default function Thread({
 
   const sendMessages = useCallback(
     async (messages: BedrockMessage[]) => {
-      const creds = (await electron.ipcRenderer.invoke(
-        'creds',
-      )) as AwsCredentialIdentity;
+      console.log(awsCredProfile);
+      const creds = (await electron.ipcRenderer
+        .invoke('creds', awsCredProfile)
+        // eslint-disable-next-line @typescript-eslint/use-unknown-in-catch-callback-variable
+        .catch((e: { message: string }) => {
+          alert(`Error getting credentials: ${e.message}`);
+        })) as AwsCredentialIdentity;
 
       const client = new BedrockRuntimeClient({
         credentials: creds,
@@ -104,7 +109,7 @@ export default function Thread({
         }
       }
     },
-    [addMessage, thread.id],
+    [addMessage, awsCredProfile, thread.id],
   );
 
   const [loading, setLoading] = useState(created);
