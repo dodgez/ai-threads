@@ -5,6 +5,7 @@ import type {
 import { DocumentFormat, ImageFormat } from '@aws-sdk/client-bedrock-runtime';
 import ArrowUpwardRounded from '@mui/icons-material/ArrowUpwardRounded';
 import CloudUpload from '@mui/icons-material/CloudUpload';
+import Stop from '@mui/icons-material/Stop';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -40,10 +41,12 @@ const ImageMimeTypeMapping: Record<string, ImageFormat> = {
 export default function Input({
   inputRef,
   loading = false,
+  onCancel,
   onSubmit,
 }: {
   inputRef?: RefObject<HTMLInputElement>;
   loading?: boolean;
+  onCancel?: () => void;
   onSubmit: (
     message: string,
     docs: DocumentBlock[],
@@ -165,7 +168,13 @@ export default function Input({
           <CloudUpload />
         </IconButton>
         {loading ? (
-          <CircularProgress sx={{ padding: 1 }} />
+          onCancel ? (
+            <IconButton onClick={onCancel}>
+              <Stop />
+            </IconButton>
+          ) : (
+            <CircularProgress sx={{ padding: 1 }} />
+          )
         ) : (
           <IconButton
             disabled={!message.trim()}

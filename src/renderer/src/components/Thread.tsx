@@ -42,6 +42,11 @@ export default function Thread({
   // Used for focusing the input after response
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const aborted = useRef(false);
+  const onCancel = useCallback(() => {
+    aborted.current = true;
+  }, []);
+
   const sendMessages = useCallback(
     async (messages: BedrockMessage[]) => {
       console.log(awsCredProfile);
@@ -68,6 +73,9 @@ export default function Thread({
         if (data.messageStart) {
           setStreamingResponse([{ text: '' }]);
         } else if (data.contentBlockDelta) {
+          if (aborted.current) {
+            break;
+          }
           if (data.contentBlockDelta.contentBlockIndex !== undefined) {
             if (data.contentBlockDelta.delta?.text !== undefined) {
               const index = data.contentBlockDelta.contentBlockIndex;
@@ -92,22 +100,22 @@ export default function Thread({
               });
             }
           }
-        } else if (data.messageStop) {
-          setLoading(false);
-          // TODO: hack add message by piggy-backing on state change
-          setStreamingResponse((res) => {
-            setTimeout(() => {
-              addMessage(thread.id, {
-                role: ConversationRole.ASSISTANT,
-                content: res,
-                id: uuid(),
-              });
-            }, 0);
-            return undefined;
-          });
-          setTimeout(() => inputRef.current?.focus(), 0);
         }
       }
+      aborted.current = false;
+      setLoading(false);
+      // TODO: hack add message by piggy-backing on state change
+      setStreamingResponse((res) => {
+        setTimeout(() => {
+          addMessage(thread.id, {
+            role: ConversationRole.ASSISTANT,
+            content: res,
+            id: uuid(),
+          });
+        }, 0);
+        return undefined;
+      });
+      setTimeout(() => inputRef.current?.focus(), 0);
     },
     [addMessage, awsCredProfile, thread.id],
   );
@@ -174,7 +182,12 @@ export default function Thread({
           <Box mt="0px !important" ref={bottomRef} />
         </Stack>
       </Container>
-      <Input inputRef={inputRef} loading={loading} onSubmit={onSubmit} />
+      <Input
+        inputRef={inputRef}
+        loading={loading}
+        onCancel={onCancel}
+        onSubmit={onSubmit}
+      />
     </Box>
   );
 }
