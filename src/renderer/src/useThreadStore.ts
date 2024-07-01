@@ -39,6 +39,7 @@ interface StoreState {
   renameThread: (id: ThreadType['id'], name: string) => void;
   deleteThread: (id: ThreadType['id']) => void;
   addMessage: (id: ThreadType['id'], message: MessageType) => void;
+  removeMessage: (id: ThreadType['id'], messageId: MessageType['id']) => void;
 }
 
 export const useThreadStore = create<StoreState>()(
@@ -135,6 +136,22 @@ export const useThreadStore = create<StoreState>()(
           newThreads[id] = {
             id,
             messages: thread.messages.concat(message),
+            name: thread.name,
+          };
+          return { threads: newThreads };
+        });
+      },
+      removeMessage: (id: ThreadType['id'], messageId: MessageType['id']) => {
+        set(({ threads }) => {
+          const newThreads = { ...threads };
+          const thread = newThreads[id];
+          if (!thread) return { threads };
+
+          newThreads[id] = {
+            id,
+            messages: thread.messages.filter(
+              (message) => message.id !== messageId,
+            ),
             name: thread.name,
           };
           return { threads: newThreads };

@@ -5,6 +5,7 @@ import Undo from '@mui/icons-material/Undo';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
+import Paper from '@mui/material/Paper';
 import TextField from '@mui/material/TextField';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useState } from 'react';
@@ -30,8 +31,6 @@ export default function ThreadButton({
 
   return !editing ? (
     <Box
-      display="flex"
-      flexDirection="row"
       onMouseEnter={() => {
         setHovered(true);
       }}
@@ -58,7 +57,14 @@ export default function ThreadButton({
         {thread.name}
       </Button>
       {hovered && (
-        <Box display="inline-flex" flexDirection="row">
+        <Paper
+          sx={{
+            backgroundColor: (theme) => theme.palette.background.default,
+            display: 'inline-flex',
+            position: 'absolute',
+            right: (theme) => theme.spacing(2),
+          }}
+        >
           <IconButton
             onClick={() => {
               setEditing(true);
@@ -74,7 +80,7 @@ export default function ThreadButton({
           >
             <Delete />
           </IconButton>
-        </Box>
+        </Paper>
       )}
     </Box>
   ) : (

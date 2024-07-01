@@ -43,6 +43,7 @@ export default function Input({
   loading = false,
   onCancel,
   onSubmit,
+  overrideCanSubmit = false,
 }: {
   inputRef?: RefObject<HTMLInputElement>;
   loading?: boolean;
@@ -52,6 +53,7 @@ export default function Input({
     docs: DocumentBlock[],
     images: ImageBlock[],
   ) => void;
+  overrideCanSubmit?: boolean;
 }) {
   const [message, setMessage] = useState('');
   const [docs, setDocs] = useState<(DocumentBlock & { id: string })[]>([]);
@@ -121,7 +123,7 @@ export default function Input({
           onKeyDown={(event) => {
             if (event.key === 'Enter' && !event.shiftKey) {
               event.preventDefault();
-              if (message.trim()) {
+              if (overrideCanSubmit || message.trim()) {
                 onSubmit(message, docs, images);
                 setMessage('');
                 setDocs([]);
@@ -177,7 +179,7 @@ export default function Input({
           )
         ) : (
           <IconButton
-            disabled={!message.trim()}
+            disabled={!message.trim() && !overrideCanSubmit}
             onClick={() => {
               onSubmit(message, docs, images);
               setMessage('');

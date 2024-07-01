@@ -124,23 +124,31 @@ export default function Thread({
   const onSubmit = useCallback(
     (message: string, docs: DocumentBlock[], images: ImageBlock[]) => {
       setLoading(true);
-      const newMessage = {
-        role: ConversationRole.USER,
-        content: [
-          { text: message, id: uuid() },
-          ...docs.map((doc) => ({
-            document: doc,
-            id: uuid(),
-          })),
-          ...images.map((image) => ({
-            image,
-            id: uuid(),
-          })),
-        ],
-        id: uuid(),
-      };
-      addMessage(thread.id, newMessage);
-      void sendMessages(thread.messages.concat(newMessage));
+      if (
+        thread.messages.length > 0 &&
+        thread.messages[thread.messages.length - 1].role ===
+          ConversationRole.USER
+      ) {
+        void sendMessages(thread.messages);
+      } else {
+        const newMessage = {
+          role: ConversationRole.USER,
+          content: [
+            { text: message, id: uuid() },
+            ...docs.map((doc) => ({
+              document: doc,
+              id: uuid(),
+            })),
+            ...images.map((image) => ({
+              image,
+              id: uuid(),
+            })),
+          ],
+          id: uuid(),
+        };
+        addMessage(thread.id, newMessage);
+        void sendMessages(thread.messages.concat(newMessage));
+      }
     },
     [addMessage, sendMessages, thread.id, thread.messages],
   );
@@ -169,14 +177,16 @@ export default function Thread({
       <Container maxWidth="lg" sx={{ flexGrow: 1, p: 2 }}>
         <Stack spacing={2}>
           {thread.messages.map((message) => (
-            <Message key={message.id} message={message} />
+            <Message key={message.id} message={message} thread={thread} />
           ))}
           {streamingResponse && (
             <Message
               message={{
                 role: ConversationRole.ASSISTANT,
                 content: streamingResponse,
+                id: undefined,
               }}
+              thread={thread}
             />
           )}
           <Box mt="0px !important" ref={bottomRef} />
@@ -187,6 +197,11 @@ export default function Thread({
         loading={loading}
         onCancel={onCancel}
         onSubmit={onSubmit}
+        overrideCanSubmit={
+          thread.messages.length > 0 &&
+          thread.messages[thread.messages.length - 1].role ===
+            ConversationRole.USER
+        }
       />
     </Box>
   );
