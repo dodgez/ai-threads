@@ -3,6 +3,10 @@ import { is } from '@electron-toolkit/utils';
 import { app, BrowserWindow, ipcMain } from 'electron';
 import { join } from 'path';
 
+void import('electron-context-menu').then((cm) => {
+  cm.default();
+});
+
 function createWindow() {
   const mainWindow = new BrowserWindow({
     width: 1280,
