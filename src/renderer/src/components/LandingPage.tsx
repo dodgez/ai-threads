@@ -60,17 +60,20 @@ export default function LandingPage({
         <Box display="flex" flexDirection="row" justifyContent="space-around">
           <Suggestion
             header="Programming"
+            onClick={onSubmit}
             suggestion="Implement FizzBuzz in JavaScript."
           />
           {mdMediaQuery && (
             <Suggestion
               header="Science"
+              onClick={onSubmit}
               suggestion="How many planets are in the Solar System?"
             />
           )}
           {lgMediaQuery && (
             <Suggestion
               header="Literature"
+              onClick={onSubmit}
               suggestion="Write a Haiku about Rabbits."
             />
           )}
