@@ -30,6 +30,8 @@ export default function ThreadButton({
 
   return !editing ? (
     <Box
+      display="flex"
+      flexDirection="row"
       onMouseEnter={() => {
         setHovered(true);
       }}
@@ -47,6 +49,7 @@ export default function ThreadButton({
                 : theme.palette.grey[100]
               : undefined,
           color: (theme) => theme.palette.text.primary,
+          flexGrow: 1,
           p: 1,
           textTransform: 'none',
           width: '100%',
@@ -55,12 +58,7 @@ export default function ThreadButton({
         {thread.name}
       </Button>
       {hovered && (
-        <Box
-          display="inline-flex"
-          flexDirection="row"
-          position="absolute"
-          right={24}
-        >
+        <Box display="inline-flex" flexDirection="row">
           <IconButton
             onClick={() => {
               setEditing(true);
