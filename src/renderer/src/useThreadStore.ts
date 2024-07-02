@@ -93,7 +93,7 @@ export const useThreadStore = create<StoreState>()(
             messages,
           });
 
-          const output = (await client.send(command)).output;
+          const { output } = await client.send(command);
           return output?.message?.content?.[0]?.text ?? 'New chat';
         })().then((name) => {
           set(({ threads }) => {

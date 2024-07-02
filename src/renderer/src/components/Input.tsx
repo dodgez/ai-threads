@@ -13,6 +13,7 @@ import Container from '@mui/material/Container';
 import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
+import { enqueueSnackbar } from 'notistack';
 import type { RefObject } from 'react';
 import { useCallback, useRef, useState } from 'react';
 import { v4 as uuid } from 'uuid';
@@ -38,6 +39,9 @@ const ImageMimeTypeMapping: Record<string, ImageFormat> = {
   'image/webp': ImageFormat.WEBP,
 };
 
+type DocType = DocumentBlock & { id: string; name: string };
+type ImageType = ImageBlock & { id: string; name: string };
+
 export default function Input({
   inputRef,
   loading = false,
@@ -62,29 +66,49 @@ export default function Input({
   >([]);
 
   const uploadDocs = useCallback(async (files: File[]) => {
-    const newDocs: (DocumentBlock & { id: string; name: string })[] =
-      await Promise.all(
-        files.map(async (file) => {
-          const format = DocMimeTypeMapping[file.type];
-          const bytes = new Uint8Array(await file.arrayBuffer());
-          return {
-            format,
-            source: {
-              bytes,
+    const newDocs: (DocType | undefined)[] = await Promise.all(
+      files.map(async (file) => {
+        const format = DocMimeTypeMapping[file.type];
+        const buffer = await file.arrayBuffer().catch((e: unknown) => {
+          enqueueSnackbar(
+            `Error uploading ${file.name}: ${JSON.stringify(e)}`,
+            {
+              variant: 'error',
             },
-            id: uuid(),
-            name: file.name.replace(/\.\w+$/, ''),
-          };
-        }),
-      );
+          );
+        });
+        if (!buffer) return undefined;
+        const bytes = new Uint8Array(buffer);
+        return {
+          format,
+          source: {
+            bytes,
+          },
+          id: uuid(),
+          name: file.name.replace(/\.\w+$/, ''),
+        };
+      }),
+    );
+    const filteredDocs = newDocs.filter(
+      (doc?: DocType): doc is DocType => !!doc,
+    );
 
-    setDocs((docs) => docs.concat(newDocs));
+    setDocs((docs) => docs.concat(filteredDocs));
   }, []);
   const uploadImages = useCallback(async (files: File[]) => {
-    const newImages = await Promise.all(
+    const newImages: (ImageType | undefined)[] = await Promise.all(
       files.map(async (file) => {
         const format = ImageMimeTypeMapping[file.type];
-        const bytes = new Uint8Array(await file.arrayBuffer());
+        const buffer = await file.arrayBuffer().catch((e: unknown) => {
+          enqueueSnackbar(
+            `Error uploading ${file.name}: ${JSON.stringify(e)}`,
+            {
+              variant: 'error',
+            },
+          );
+        });
+        if (!buffer) return undefined;
+        const bytes = new Uint8Array(buffer);
         return {
           format,
           source: {
@@ -95,8 +119,11 @@ export default function Input({
         };
       }),
     );
+    const filteredImages = newImages.filter(
+      (img?: ImageType): img is ImageType => !!img,
+    );
 
-    setImages((images) => images.concat(newImages));
+    setImages((images) => images.concat(filteredImages));
   }, []);
 
   const fileInputRef = useRef<HTMLInputElement>(null);

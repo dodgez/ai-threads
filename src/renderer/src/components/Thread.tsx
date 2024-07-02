@@ -13,6 +13,7 @@ import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Stack from '@mui/material/Stack';
 import type { AwsCredentialIdentity } from '@smithy/types';
+import { enqueueSnackbar } from 'notistack';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { v4 as uuid } from 'uuid';
 
@@ -68,10 +69,13 @@ export default function Thread({
     async (messages: BedrockMessage[]) => {
       const creds = (await electron.ipcRenderer
         .invoke('creds', awsCredProfile)
-        // eslint-disable-next-line @typescript-eslint/use-unknown-in-catch-callback-variable
-        .catch((e: { message: string }) => {
-          alert(`Error getting credentials: ${e.message}`);
-        })) as AwsCredentialIdentity;
+        .catch((e: unknown) => {
+          enqueueSnackbar(`Error getting credentials: ${JSON.stringify(e)}`, {
+            variant: 'error',
+          });
+        })) as AwsCredentialIdentity | undefined;
+
+      if (!creds) return;
 
       const client = new BedrockRuntimeClient({
         credentials: creds,
@@ -82,48 +86,60 @@ export default function Thread({
         messages,
       });
 
-      const stream = (await client.send(command)).stream;
+      const { stream } = await client.send(command).catch((e: unknown) => {
+        enqueueSnackbar(`Error sending messages: ${JSON.stringify(e)}`, {
+          variant: 'error',
+        });
+        return { stream: undefined };
+      });
 
       if (!stream) return;
+
       let content: ContentBlock[] = [];
-      for await (const data of stream) {
-        if (data.messageStart) {
-          setStreamingResponse([{ text: '' }]);
-          content = [{ text: '' }];
-        } else if (data.contentBlockDelta) {
-          if (aborted.current) {
-            break;
-          }
-          if (data.contentBlockDelta.contentBlockIndex !== undefined) {
-            if (data.contentBlockDelta.delta?.text !== undefined) {
-              const index = data.contentBlockDelta.contentBlockIndex;
-              const text = data.contentBlockDelta.delta.text.toString();
-              setStreamingResponse((res) => {
-                if (!res) return res;
+      try {
+        for await (const data of stream) {
+          if (data.messageStart) {
+            setStreamingResponse([{ text: '' }]);
+            content = [{ text: '' }];
+          } else if (data.contentBlockDelta) {
+            if (aborted.current) {
+              break;
+            }
+            if (data.contentBlockDelta.contentBlockIndex !== undefined) {
+              if (data.contentBlockDelta.delta?.text !== undefined) {
+                const index = data.contentBlockDelta.contentBlockIndex;
+                const text = data.contentBlockDelta.delta.text.toString();
+                setStreamingResponse((res) => {
+                  if (!res) return res;
 
-                const response = [
-                  ...res.map((cb) => ({ text: cb.text }) as ContentBlock),
-                ];
-                if (response[index].text === undefined) {
-                  response[index].text = text;
-                  content[index].text = text;
-                } else {
-                  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                  response[index].text! += text;
-                  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                  content[index].text! += text;
-                }
+                  const response = [
+                    ...res.map((cb) => ({ text: cb.text }) as ContentBlock),
+                  ];
+                  if (response[index].text === undefined) {
+                    response[index].text = text;
+                    content[index].text = text;
+                  } else {
+                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                    response[index].text! += text;
+                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                    content[index].text! += text;
+                  }
 
-                return response;
-              });
-              if (isScrolledBottom()) {
-                bottomRef.current?.scrollIntoView({
-                  behavior: 'auto',
+                  return response;
                 });
+                if (isScrolledBottom()) {
+                  bottomRef.current?.scrollIntoView({
+                    behavior: 'auto',
+                  });
+                }
               }
             }
           }
         }
+      } catch (e: unknown) {
+        enqueueSnackbar(`Error reading response: ${JSON.stringify(e)}`, {
+          variant: 'error',
+        });
       }
       aborted.current = false;
       setLoading(false);

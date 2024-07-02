@@ -30,6 +30,7 @@
     "@mui/material": "^5.15.20",
     "electron-context-menu": "^4.0.1",
     "idb-keyval": "^6.2.1",
+    "notistack": "^3.0.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-markdown": "^9.0.1",

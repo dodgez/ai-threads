@@ -4,6 +4,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Drawer from '@mui/material/Drawer';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
+import { SnackbarProvider } from 'notistack';
 import { useCallback, useState } from 'react';
 
 import LandingPage from './LandingPage';
@@ -96,6 +97,7 @@ export default function Layout() {
           value={awsCredProfile ?? ''}
         />
       </Drawer>
+      <SnackbarProvider />
       {activeThread ? (
         <Thread
           created={lastCreatedThreadId === activeThreadId}
