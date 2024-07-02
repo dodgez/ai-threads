@@ -51,18 +51,18 @@ export default function Layout() {
           width: 300,
           '& .MuiDrawer-paper': {
             boxSizing: 'border-box',
-            padding: 3,
             width: 300,
           },
         }}
         variant="permanent"
       >
-        <Stack spacing={2} sx={{ flexGrow: 1 }}>
+        <Stack sx={{ flexGrow: 1 }}>
           <Button
             disabled={!activeThread}
             onClick={() => {
               setActiveThreadId(undefined);
             }}
+            sx={{ ml: 2, mr: 2, mt: 2 }}
             variant="outlined"
           >
             New thread
@@ -92,6 +92,7 @@ export default function Layout() {
             }
           }}
           placeholder="AWS credentials profile"
+          sx={{ ml: 2, mr: 2, mb: 2 }}
           value={awsCredProfile ?? ''}
         />
       </Drawer>

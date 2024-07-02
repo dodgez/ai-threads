@@ -31,12 +31,14 @@ export default function ThreadButton({
 
   return !editing ? (
     <Box
+      display="flex"
       onMouseEnter={() => {
         setHovered(true);
       }}
       onMouseLeave={() => {
         setHovered(false);
       }}
+      pl="34px"
     >
       <Button
         onClick={onClick}
@@ -49,63 +51,67 @@ export default function ThreadButton({
               : undefined,
           color: (theme) => theme.palette.text.primary,
           flexGrow: 1,
-          p: 1,
           textTransform: 'none',
           width: '100%',
         }}
       >
         {thread.name}
       </Button>
-      {hovered && (
-        <Paper
-          sx={{
-            backgroundColor: (theme) => theme.palette.background.default,
-            display: 'inline-flex',
-            position: 'absolute',
-            right: (theme) => theme.spacing(2),
+      <Paper
+        sx={{
+          backgroundColor: (theme) => theme.palette.background.default,
+          display: 'inline-flex',
+          flexDirection: 'column',
+          visibility: hovered ? 'visible' : 'hidden',
+        }}
+      >
+        <IconButton
+          onClick={() => {
+            setEditing(true);
+            setNewName(thread.name);
           }}
+          size="small"
         >
-          <IconButton
-            onClick={() => {
-              setEditing(true);
-              setNewName(thread.name);
-            }}
-          >
-            <Edit />
-          </IconButton>
-          <IconButton
-            onClick={() => {
-              deleteThread(thread.id);
-            }}
-          >
-            <Delete />
-          </IconButton>
-        </Paper>
-      )}
+          <Edit />
+        </IconButton>
+        <IconButton
+          onClick={() => {
+            deleteThread(thread.id);
+          }}
+          size="small"
+        >
+          <Delete />
+        </IconButton>
+      </Paper>
     </Box>
   ) : (
-    <Box display="flex">
+    <Box alignItems="center" display="flex">
       <TextField
         onChange={({ target }) => {
           setNewName(target.value);
         }}
+        sx={{ flexGrow: 1, ml: '34px' }}
         value={newName}
       />
-      <IconButton
-        onClick={() => {
-          renameThread(thread.id, newName);
-          setEditing(false);
-        }}
-      >
-        <Save />
-      </IconButton>
-      <IconButton
-        onClick={() => {
-          setEditing(false);
-        }}
-      >
-        <Undo />
-      </IconButton>
+      <Box display="flex" flexDirection="column">
+        <IconButton
+          onClick={() => {
+            setEditing(false);
+          }}
+          size="small"
+        >
+          <Undo />
+        </IconButton>
+        <IconButton
+          onClick={() => {
+            renameThread(thread.id, newName);
+            setEditing(false);
+          }}
+          size="small"
+        >
+          <Save />
+        </IconButton>
+      </Box>
     </Box>
   );
 }
