@@ -24,6 +24,16 @@ import { useThreadStore } from '../useThreadStore';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const electron = require('electron');
 
+function isScrolledBottom() {
+  const scrollPosition = window.scrollY;
+  const documentHeight =
+    document.documentElement.scrollHeight || document.body.scrollHeight;
+  const windowHeight = window.innerHeight;
+
+  const scrollThreshold = 110;
+  return documentHeight - (scrollPosition + windowHeight) <= scrollThreshold;
+}
+
 export default function Thread({
   created,
   thread,
@@ -47,9 +57,15 @@ export default function Thread({
     aborted.current = true;
   }, []);
 
+  useEffect(() => {
+    window.scrollTo({
+      behavior: 'smooth',
+      top: 0,
+    });
+  }, [thread.id]);
+
   const sendMessages = useCallback(
     async (messages: BedrockMessage[]) => {
-      console.log(awsCredProfile);
       const creds = (await electron.ipcRenderer
         .invoke('creds', awsCredProfile)
         // eslint-disable-next-line @typescript-eslint/use-unknown-in-catch-callback-variable
@@ -69,9 +85,11 @@ export default function Thread({
       const stream = (await client.send(command)).stream;
 
       if (!stream) return;
+      let content: ContentBlock[] = [];
       for await (const data of stream) {
         if (data.messageStart) {
           setStreamingResponse([{ text: '' }]);
+          content = [{ text: '' }];
         } else if (data.contentBlockDelta) {
           if (aborted.current) {
             break;
@@ -88,34 +106,39 @@ export default function Thread({
                 ];
                 if (response[index].text === undefined) {
                   response[index].text = text;
+                  content[index].text = text;
                 } else {
                   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                   response[index].text! += text;
+                  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                  content[index].text! += text;
                 }
 
                 return response;
               });
-              bottomRef.current?.scrollIntoView({
-                behavior: 'instant',
-              });
+              if (isScrolledBottom()) {
+                bottomRef.current?.scrollIntoView({
+                  behavior: 'auto',
+                });
+              }
             }
           }
         }
       }
       aborted.current = false;
       setLoading(false);
-      // TODO: hack add message by piggy-backing on state change
-      setStreamingResponse((res) => {
-        setTimeout(() => {
-          addMessage(thread.id, {
-            role: ConversationRole.ASSISTANT,
-            content: res,
-            id: uuid(),
-          });
-        }, 0);
-        return undefined;
+      addMessage(thread.id, {
+        role: ConversationRole.ASSISTANT,
+        content,
+        id: uuid(),
       });
+      setStreamingResponse(undefined);
       setTimeout(() => inputRef.current?.focus(), 0);
+      if (isScrolledBottom()) {
+        bottomRef.current?.scrollIntoView({
+          behavior: 'auto',
+        });
+      }
     },
     [addMessage, awsCredProfile, thread.id],
   );
@@ -159,12 +182,6 @@ export default function Thread({
     needsTrigger.current = false;
     void sendMessages(thread.messages);
   }
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({
-      behavior: 'instant',
-    });
-  }, [thread.messages]);
 
   return (
     <Box
