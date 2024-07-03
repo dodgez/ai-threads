@@ -73,6 +73,7 @@ export default function Input({
           enqueueSnackbar(
             `Error uploading ${file.name}: ${JSON.stringify(e)}`,
             {
+              autoHideDuration: 3000,
               variant: 'error',
             },
           );
@@ -103,6 +104,7 @@ export default function Input({
           enqueueSnackbar(
             `Error uploading ${file.name}: ${JSON.stringify(e)}`,
             {
+              autoHideDuration: 3000,
               variant: 'error',
             },
           );

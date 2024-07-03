@@ -67,15 +67,31 @@ export default function Thread({
 
   const sendMessages = useCallback(
     async (messages: BedrockMessage[]) => {
+      const cleanup = () => {
+        aborted.current = false;
+        setLoading(false);
+        setStreamingResponse(undefined);
+        setTimeout(() => inputRef.current?.focus(), 0);
+        if (isScrolledBottom()) {
+          bottomRef.current?.scrollIntoView({
+            behavior: 'auto',
+          });
+        }
+      };
+
       const creds = (await electron.ipcRenderer
         .invoke('creds', awsCredProfile)
         .catch((e: unknown) => {
           enqueueSnackbar(`Error getting credentials: ${JSON.stringify(e)}`, {
+            autoHideDuration: 3000,
             variant: 'error',
           });
         })) as AwsCredentialIdentity | undefined;
 
-      if (!creds) return;
+      if (!creds) {
+        cleanup();
+        return;
+      }
 
       const client = new BedrockRuntimeClient({
         credentials: creds,
@@ -88,12 +104,16 @@ export default function Thread({
 
       const { stream } = await client.send(command).catch((e: unknown) => {
         enqueueSnackbar(`Error sending messages: ${JSON.stringify(e)}`, {
+          autoHideDuration: 3000,
           variant: 'error',
         });
         return { stream: undefined };
       });
 
-      if (!stream) return;
+      if (!stream) {
+        cleanup();
+        return;
+      }
 
       let content: ContentBlock[] = [];
       try {
@@ -136,24 +156,19 @@ export default function Thread({
             }
           }
         }
+
+        addMessage(thread.id, {
+          role: ConversationRole.ASSISTANT,
+          content,
+          id: uuid(),
+        });
       } catch (e: unknown) {
         enqueueSnackbar(`Error reading response: ${JSON.stringify(e)}`, {
+          autoHideDuration: 3000,
           variant: 'error',
         });
-      }
-      aborted.current = false;
-      setLoading(false);
-      addMessage(thread.id, {
-        role: ConversationRole.ASSISTANT,
-        content,
-        id: uuid(),
-      });
-      setStreamingResponse(undefined);
-      setTimeout(() => inputRef.current?.focus(), 0);
-      if (isScrolledBottom()) {
-        bottomRef.current?.scrollIntoView({
-          behavior: 'auto',
-        });
+      } finally {
+        cleanup();
       }
     },
     [addMessage, awsCredProfile, thread.id],
