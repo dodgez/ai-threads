@@ -9,6 +9,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import { useCallback, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
+import highlight from 'rehype-highlight';
 
 import type { MessageType, ThreadType } from '../useThreadStore';
 import { useThreadStore } from '../useThreadStore';
@@ -99,11 +100,14 @@ export default function Message({
       <Paper
         elevation={2}
         sx={{
+          overflow: 'auto',
           p: 2,
         }}
       >
-        {/* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */}
-        <ReactMarkdown>{message.content![0].text!}</ReactMarkdown>
+        <ReactMarkdown rehypePlugins={[highlight]}>
+          {/* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */}
+          {message.content![0].text!}
+        </ReactMarkdown>
       </Paper>
       <IconButton
         onClick={onRemove}
