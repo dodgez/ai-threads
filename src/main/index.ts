@@ -28,7 +28,7 @@ function createWindow() {
 }
 
 ipcMain.handle('creds', async (_event, profile?: string) =>
-  fromIni({ profile })(),
+  fromIni({ ignoreCache: true, profile })(),
 );
 
 void app.whenReady().then(() => {
