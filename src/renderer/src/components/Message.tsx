@@ -110,8 +110,7 @@ export default function Message({
         }}
       >
         <ReactMarkdown rehypePlugins={[highlight]}>
-          {/* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */}
-          {message.content![0].text!}
+          {message.content?.[0]?.text ?? ''}
         </ReactMarkdown>
       </Paper>
       <IconButton

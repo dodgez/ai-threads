@@ -69,13 +69,13 @@ export const useThreadStore = create<StoreState>()(
         });
 
         void (async () => {
-          if (!message.content?.[0].text) return 'New chat';
+          if (!message.content?.[0]?.text) return 'New chat';
           const messages = [
             {
               role: ConversationRole.USER,
               content: [
                 {
-                  text: `Give a short phrase to describe this question: "${message.content[0].text}". Do not end the phrase with a period.`,
+                  text: `Based on this opening question: "${message.content[0].text}", what would be a concise and descriptive name for this conversation thread? Only provide the name, not any other information or explanation.`,
                 },
               ],
             },
