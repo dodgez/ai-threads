@@ -43,6 +43,7 @@ export default function Thread({
   thread: ThreadType;
 }) {
   const addMessage = useThreadStore((state) => state.addMessage);
+  const addTokens = useThreadStore((state) => state.addTokens);
   const awsCredProfile = useThreadStore((state) => state.awsCredProfile);
   const [streamingResponse, setStreamingResponse] =
     useState<MessageType['content']>();
@@ -123,7 +124,7 @@ export default function Thread({
             content = [{ text: '' }];
           } else if (data.contentBlockDelta) {
             if (aborted.current) {
-              break;
+              continue;
             }
             if (data.contentBlockDelta.contentBlockIndex !== undefined) {
               if (data.contentBlockDelta.delta?.text !== undefined) {
@@ -154,6 +155,17 @@ export default function Thread({
                 }
               }
             }
+          } else if (data.metadata) {
+            if (
+              data.metadata.usage?.inputTokens === undefined ||
+              data.metadata.usage.outputTokens == undefined
+            ) {
+              continue;
+            }
+            addTokens(
+              data.metadata.usage.inputTokens,
+              data.metadata.usage.outputTokens,
+            );
           }
         }
 
@@ -171,7 +183,7 @@ export default function Thread({
         cleanup();
       }
     },
-    [addMessage, awsCredProfile, thread.id],
+    [addMessage, addTokens, awsCredProfile, thread.id],
   );
 
   const [loading, setLoading] = useState(created);

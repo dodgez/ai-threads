@@ -4,7 +4,9 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Drawer from '@mui/material/Drawer';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
 import { SnackbarProvider } from 'notistack';
+import numeral from 'numeral';
 import { useCallback, useState } from 'react';
 
 import LandingPage from './LandingPage';
@@ -20,6 +22,7 @@ export default function Layout() {
   const threads = useThreadStore((state) => state.threads);
   const [activeThreadId, setActiveThreadId] = useState<ThreadType['id']>();
   const activeThread = activeThreadId ? threads[activeThreadId] : undefined;
+  const tokens = useThreadStore((state) => state.tokens);
 
   // Pass to the thread to trigger call during screen transition
   const [lastCreatedThreadId, setLastCreatedThreadId] =
@@ -93,9 +96,18 @@ export default function Layout() {
             }
           }}
           placeholder="AWS credentials profile"
-          sx={{ ml: 2, mr: 2, mb: 2 }}
+          sx={{ ml: 2, mr: 2, mb: 0.5 }}
           value={awsCredProfile ?? ''}
         />
+        <Box color="gray" mb={0.5} mx="auto">
+          <Typography variant="caption">
+            {numeral(tokens.input).format('0.00a')}/
+            {numeral(tokens.output).format('0.00a')} tokens (in/out) ~$
+            {numeral(
+              (tokens.input / 1000) * 0.003 + (tokens.output / 1000) * 0.015,
+            ).format('0.00a')}
+          </Typography>
+        </Box>
       </Drawer>
       <SnackbarProvider />
       {activeThread ? (

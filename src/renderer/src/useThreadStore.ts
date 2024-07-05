@@ -40,6 +40,8 @@ interface StoreState {
   deleteThread: (id: ThreadType['id']) => void;
   addMessage: (id: ThreadType['id'], message: MessageType) => void;
   removeMessage: (id: ThreadType['id'], messageId: MessageType['id']) => void;
+  tokens: { input: number; output: number };
+  addTokens: (input: number, output: number) => void;
 }
 
 export const useThreadStore = create<StoreState>()(
@@ -157,6 +159,15 @@ export const useThreadStore = create<StoreState>()(
           return { threads: newThreads };
         });
       },
+      tokens: { input: 0, output: 0 },
+      addTokens: (input: number, output: number) => {
+        set(({ tokens }) => ({
+          tokens: {
+            input: tokens.input + input,
+            output: tokens.output + output,
+          },
+        }));
+      },
     }),
     {
       name: 'bedrock-threads',
@@ -165,7 +176,9 @@ export const useThreadStore = create<StoreState>()(
       },
       partialize: (state) =>
         Object.fromEntries(
-          Object.entries(state).filter(([key]) => ['threads'].includes(key)),
+          Object.entries(state).filter(([key]) =>
+            ['threads', 'tokens'].includes(key),
+          ),
         ),
       storage: createJSONStorage(() => storage),
     },
