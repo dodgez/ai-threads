@@ -23,7 +23,7 @@ import type { MessageType, ThreadType } from '../useThreadStore';
 import { useThreadStore } from '../useThreadStore';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const electron = require('electron');
+const { ipcRenderer } = require('electron');
 
 function isScrolledBottom() {
   const scrollPosition = window.scrollY;
@@ -80,7 +80,7 @@ export default function Thread({
         }
       };
 
-      const creds = (await electron.ipcRenderer
+      const creds = (await ipcRenderer
         .invoke('creds', awsCredProfile)
         .catch((e: unknown) => {
           enqueueSnackbar(`Error getting credentials: ${JSON.stringify(e)}`, {

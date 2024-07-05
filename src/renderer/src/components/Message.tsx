@@ -4,6 +4,7 @@ import Delete from '@mui/icons-material/Delete';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
+import Link from '@mui/material/Link';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
@@ -13,6 +14,9 @@ import highlight from 'rehype-highlight';
 
 import type { MessageType, ThreadType } from '../useThreadStore';
 import { useThreadStore } from '../useThreadStore';
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { shell } = require('electron');
 
 function Content({ contentBlock }: { contentBlock: ContentBlock }) {
   if (contentBlock.text) {
@@ -109,7 +113,22 @@ export default function Message({
           p: 2,
         }}
       >
-        <ReactMarkdown rehypePlugins={[highlight]}>
+        <ReactMarkdown
+          components={{
+            a: ({ children, href }) => (
+              <Link
+                href={href}
+                onClick={(event) => {
+                  event.preventDefault();
+                  void shell.openExternal(href ?? '');
+                }}
+              >
+                {children}
+              </Link>
+            ),
+          }}
+          rehypePlugins={[highlight]}
+        >
           {message.content?.[0]?.text ?? ''}
         </ReactMarkdown>
       </Paper>

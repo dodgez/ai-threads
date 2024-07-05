@@ -12,7 +12,7 @@ import type { StateStorage } from 'zustand/middleware';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const electron = require('electron');
+const { ipcRenderer } = require('electron');
 
 export type MessageType = BedrockMessage & { id: string };
 export interface ThreadType {
@@ -81,7 +81,7 @@ export const useThreadStore = create<StoreState>()(
             },
           ];
           const profile = get().awsCredProfile;
-          const creds = (await electron.ipcRenderer.invoke(
+          const creds = (await ipcRenderer.invoke(
             'creds',
             profile,
           )) as AwsCredentialIdentity;
