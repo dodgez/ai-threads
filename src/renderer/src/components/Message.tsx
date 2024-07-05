@@ -16,7 +16,11 @@ import { useThreadStore } from '../useThreadStore';
 
 function Content({ contentBlock }: { contentBlock: ContentBlock }) {
   if (contentBlock.text) {
-    return <Typography>{contentBlock.text}</Typography>;
+    return (
+      <Typography sx={{ whiteSpace: 'pre-wrap' }}>
+        {contentBlock.text}
+      </Typography>
+    );
   } else if (contentBlock.document) {
     return <Chip color="info" label={contentBlock.document.name} />;
   } else if (contentBlock.image) {
@@ -71,6 +75,7 @@ export default function Message({
           backgroundColor: (theme) => theme.palette.primary.main,
           color: (theme) =>
             theme.palette.getContrastText(theme.palette.primary.main),
+          overflow: 'auto',
           p: 2,
         }}
       >
