@@ -60,17 +60,17 @@ export default function Layout() {
         }}
         variant="permanent"
       >
-        <Stack sx={{ flexGrow: 1 }}>
-          <Button
-            disabled={!activeThread}
-            onClick={() => {
-              setActiveThreadId(undefined);
-            }}
-            sx={{ ml: 2, mr: 2, mt: 2 }}
-            variant="outlined"
-          >
-            New thread
-          </Button>
+        <Button
+          disabled={!activeThread}
+          onClick={() => {
+            setActiveThreadId(undefined);
+          }}
+          sx={{ ml: 2, mr: 2, mt: 2 }}
+          variant="outlined"
+        >
+          New thread
+        </Button>
+        <Stack sx={{ flexGrow: 1, overflow: 'auto' }}>
           {Object.entries(threads).map(([_, thread]) => {
             if (!thread) {
               return null;
