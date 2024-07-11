@@ -145,6 +145,7 @@ export default function Input({
           disabled={loading}
           fullWidth
           inputRef={inputRef}
+          maxRows={5}
           multiline
           onChange={({ target }) => {
             setMessage(target.value);
