@@ -1,7 +1,10 @@
+import Settings from '@mui/icons-material/Settings';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
 import Drawer from '@mui/material/Drawer';
+import IconButton from '@mui/material/IconButton';
+import Modal from '@mui/material/Modal';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
@@ -33,6 +36,8 @@ export default function Layout() {
     setActiveThreadId(threadId);
   }, []);
 
+  const [modalOpen, setModalOpen] = useState(false);
+
   if (!hasHydrated) {
     return (
       <Box
@@ -60,16 +65,25 @@ export default function Layout() {
         }}
         variant="permanent"
       >
-        <Button
-          disabled={!activeThread}
-          onClick={() => {
-            setActiveThreadId(undefined);
-          }}
-          sx={{ ml: 2, mr: 2, mt: 2 }}
-          variant="outlined"
-        >
-          New thread
-        </Button>
+        <Box display="flex" ml={2} mr={2} mt={2}>
+          <Button
+            disabled={!activeThread}
+            onClick={() => {
+              setActiveThreadId(undefined);
+            }}
+            sx={{ flexGrow: 1 }}
+            variant="outlined"
+          >
+            New thread
+          </Button>
+          <IconButton
+            onClick={() => {
+              setModalOpen(true);
+            }}
+          >
+            <Settings />
+          </IconButton>
+        </Box>
         <Stack sx={{ flexGrow: 1, overflow: 'auto' }}>
           {Object.entries(threads).map(([_, thread]) => {
             if (!thread) {
@@ -87,18 +101,6 @@ export default function Layout() {
             );
           })}
         </Stack>
-        <TextField
-          onChange={({ target }) => {
-            if (target.value === '') {
-              setAwsCredProfile(undefined);
-            } else {
-              setAwsCredProfile(target.value);
-            }
-          }}
-          placeholder="AWS credentials profile"
-          sx={{ ml: 2, mr: 2, mb: 0.5 }}
-          value={awsCredProfile ?? ''}
-        />
         <Box color="gray" mb={0.5} mx="auto">
           <Typography variant="caption">
             {numeral(tokens.input).format('0.00a')}/
@@ -110,6 +112,44 @@ export default function Layout() {
         </Box>
       </Drawer>
       <SnackbarProvider />
+      <Modal open={modalOpen}>
+        <Box
+          border="2px solid #000"
+          boxShadow={24}
+          left="50%"
+          pb={2}
+          pt={4}
+          px={4}
+          position="absolute"
+          top="50%"
+          sx={{
+            backgroundColor: (theme) => theme.palette.background.paper,
+            transform: 'translate(-50%, -50%)',
+          }}
+          width="400px"
+        >
+          <Stack spacing={2}>
+            <TextField
+              onChange={({ target }) => {
+                if (target.value === '') {
+                  setAwsCredProfile(undefined);
+                } else {
+                  setAwsCredProfile(target.value);
+                }
+              }}
+              placeholder="AWS credentials profile"
+              value={awsCredProfile ?? ''}
+            />
+            <Button
+              onClick={() => {
+                setModalOpen(false);
+              }}
+            >
+              Close
+            </Button>
+          </Stack>
+        </Box>
+      </Modal>
       {activeThread ? (
         <Thread
           created={lastCreatedThreadId === activeThreadId}
