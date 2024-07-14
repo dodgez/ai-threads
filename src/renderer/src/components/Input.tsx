@@ -14,7 +14,7 @@ import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import { enqueueSnackbar } from 'notistack';
-import type { RefObject } from 'react';
+import type { ReactNode, RefObject } from 'react';
 import { useCallback, useRef, useState } from 'react';
 import { v4 as uuid } from 'uuid';
 
@@ -44,12 +44,14 @@ type ImageType = ImageBlock & { id: string; name: string };
 
 export default function Input({
   inputRef,
+  jumpButton = null,
   loading = false,
   onCancel,
   onSubmit,
   overrideCanSubmit = false,
 }: {
   inputRef?: RefObject<HTMLInputElement>;
+  jumpButton?: ReactNode;
   loading?: boolean;
   onCancel?: () => void;
   onSubmit: (
@@ -131,120 +133,129 @@ export default function Input({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <Box
-      alignItems="end"
-      bottom={0}
-      pb={2}
-      position="sticky"
-      px={2}
-      sx={{ backgroundColor: (theme) => theme.palette.background.default }}
-    >
-      <Box alignItems="center" display="flex">
-        <TextField
-          autoFocus
-          disabled={loading}
-          fullWidth
-          inputRef={inputRef}
-          maxRows={5}
-          multiline
-          onChange={({ target }) => {
-            setMessage(target.value);
-          }}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' && !event.shiftKey) {
-              event.preventDefault();
-              if (overrideCanSubmit || message.trim()) {
-                onSubmit(message, docs, images);
-                setMessage('');
-                setDocs([]);
-                setImages([]);
+    <Box alignItems="end" bottom={0} position="sticky">
+      <Box display="flex" justifyContent="center">
+        {jumpButton}
+      </Box>
+      <Box
+        pb={2}
+        px={2}
+        sx={{ backgroundColor: (theme) => theme.palette.background.default }}
+      >
+        <Box alignItems="center" display="flex">
+          <TextField
+            autoFocus
+            disabled={loading}
+            fullWidth
+            inputRef={inputRef}
+            maxRows={5}
+            multiline
+            onChange={({ target }) => {
+              setMessage(target.value);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                if (overrideCanSubmit || message.trim()) {
+                  onSubmit(message, docs, images);
+                  setMessage('');
+                  setDocs([]);
+                  setImages([]);
+                }
               }
-            }
-          }}
-          onPaste={(event) => {
-            const data = event.clipboardData;
-            if (data.files.length > 0) {
-              const files = Array.from(data.files);
+            }}
+            onPaste={(event) => {
+              const data = event.clipboardData;
+              if (data.files.length > 0) {
+                const files = Array.from(data.files);
+                void uploadDocs(
+                  files.filter((file) => file.type in DocMimeTypeMapping),
+                );
+                void uploadImages(
+                  files.filter((file) => file.type in ImageMimeTypeMapping),
+                );
+              }
+            }}
+            placeholder="Ask a question"
+            value={message}
+          />
+          <input
+            accept=".csv,.doc,.docx,.jpg,.html,.md,.pdf,.png,.txt,.xls,.xlsx"
+            multiple
+            onChange={(data) => {
+              if (!data.target.files) {
+                return;
+              }
+
+              const files = Array.from(data.target.files);
               void uploadDocs(
                 files.filter((file) => file.type in DocMimeTypeMapping),
               );
               void uploadImages(
                 files.filter((file) => file.type in ImageMimeTypeMapping),
               );
-            }
-          }}
-          placeholder="Ask a question"
-          value={message}
-        />
-        <input
-          accept=".csv,.doc,.docx,.jpg,.html,.md,.pdf,.png,.txt,.xls,.xlsx"
-          multiple
-          onChange={(data) => {
-            if (!data.target.files) {
-              return;
-            }
-
-            const files = Array.from(data.target.files);
-            void uploadDocs(
-              files.filter((file) => file.type in DocMimeTypeMapping),
-            );
-            void uploadImages(
-              files.filter((file) => file.type in ImageMimeTypeMapping),
-            );
-          }}
-          ref={fileInputRef}
-          style={{ display: 'none' }}
-          type="file"
-        />
-        <IconButton onClick={() => fileInputRef.current?.click()}>
-          <CloudUpload />
-        </IconButton>
-        {loading ? (
-          onCancel ? (
-            <IconButton onClick={onCancel}>
-              <Stop />
-            </IconButton>
-          ) : (
-            <CircularProgress sx={{ padding: 1 }} />
-          )
-        ) : (
-          <IconButton
-            disabled={!message.trim() && !overrideCanSubmit}
-            onClick={() => {
-              onSubmit(message, docs, images);
-              setMessage('');
-              setDocs([]);
-              setImages([]);
             }}
-          >
-            <ArrowUpwardRounded />
+            ref={fileInputRef}
+            style={{ display: 'none' }}
+            type="file"
+          />
+          <IconButton onClick={() => fileInputRef.current?.click()}>
+            <CloudUpload />
           </IconButton>
-        )}
+          {loading ? (
+            onCancel ? (
+              <IconButton onClick={onCancel}>
+                <Stop />
+              </IconButton>
+            ) : (
+              <CircularProgress sx={{ padding: 1 }} />
+            )
+          ) : (
+            <IconButton
+              disabled={!message.trim() && !overrideCanSubmit}
+              onClick={() => {
+                onSubmit(message, docs, images);
+                setMessage('');
+                setDocs([]);
+                setImages([]);
+              }}
+            >
+              <ArrowUpwardRounded />
+            </IconButton>
+          )}
+        </Box>
+        <Container
+          maxWidth="md"
+          sx={{
+            backgroundColor: (theme) => theme.palette.background.default,
+            overflowX: 'auto',
+            pt: 1,
+          }}
+        >
+          <Stack direction="row" spacing={1}>
+            {docs.map((doc) => (
+              <Chip
+                key={doc.id}
+                label={doc.name}
+                onDelete={() => {
+                  setDocs((docs) => docs.filter((doc2) => doc2.id !== doc.id));
+                }}
+              />
+            ))}
+            {images.map((image) => (
+              <Chip
+                key={image.id}
+                label={image.name}
+                onDelete={() => {
+                  setImages((images) =>
+                    images.filter((image2) => image2.id !== image.id),
+                  );
+                }}
+              />
+            ))}
+          </Stack>
+        </Container>
       </Box>
-      <Container maxWidth="md" sx={{ overflowX: 'auto', pt: 1 }}>
-        <Stack direction="row" spacing={1}>
-          {docs.map((doc) => (
-            <Chip
-              key={doc.id}
-              label={doc.name}
-              onDelete={() => {
-                setDocs((docs) => docs.filter((doc2) => doc2.id !== doc.id));
-              }}
-            />
-          ))}
-          {images.map((image) => (
-            <Chip
-              key={image.id}
-              label={image.name}
-              onDelete={() => {
-                setImages((images) =>
-                  images.filter((image2) => image2.id !== image.id),
-                );
-              }}
-            />
-          ))}
-        </Stack>
-      </Container>
     </Box>
   );
 }

@@ -10,6 +10,7 @@ import {
   ConverseStreamCommand,
 } from '@aws-sdk/client-bedrock-runtime';
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
 import Stack from '@mui/material/Stack';
 import type { AwsCredentialIdentity } from '@smithy/types';
@@ -226,6 +227,23 @@ export default function Thread({
     void sendMessages(thread.messages);
   }
 
+  const [showJump, setShowJump] = useState(false);
+  useEffect(() => {
+    const listener = () => {
+      if (!isScrolledBottom()) {
+        setShowJump(true);
+      } else {
+        setShowJump(false);
+      }
+    };
+    window.addEventListener('scroll', listener);
+    listener();
+
+    return () => {
+      window.removeEventListener('scroll', listener);
+    };
+  }, [thread]);
+
   return (
     <Box
       display="flex"
@@ -254,6 +272,27 @@ export default function Thread({
       </Container>
       <Input
         inputRef={inputRef}
+        jumpButton={
+          showJump && (
+            <Box
+              mb={1}
+              sx={{
+                backgroundColor: (theme) => theme.palette.background.default,
+              }}
+            >
+              <Button
+                onClick={() => {
+                  bottomRef.current?.scrollIntoView({
+                    behavior: 'smooth',
+                  });
+                }}
+                variant="outlined"
+              >
+                Jump to latest message
+              </Button>
+            </Box>
+          )
+        }
         loading={loading}
         onCancel={onCancel}
         onSubmit={onSubmit}
