@@ -232,6 +232,13 @@ export default function Thread({
           id: uuid(),
         };
         addMessage(thread.id, newMessage);
+        if (isScrolledBottom()) {
+          setTimeout(() => {
+            bottomRef.current?.scrollIntoView({
+              behavior: 'auto',
+            });
+          }, 0);
+        }
         void sendMessages(thread.messages.concat(newMessage));
       }
     },
