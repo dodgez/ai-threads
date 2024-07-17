@@ -142,7 +142,7 @@ export default function Thread({
             content = [{ text: '' }];
           } else if (data.contentBlockDelta) {
             if (aborted.current) {
-              continue;
+              break;
             }
             if (data.contentBlockDelta.contentBlockIndex !== undefined) {
               if (data.contentBlockDelta.delta?.text !== undefined) {
