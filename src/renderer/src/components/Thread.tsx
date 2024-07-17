@@ -67,6 +67,23 @@ export default function Thread({
     });
   }, [thread.id]);
 
+  const [showJump, setShowJump] = useState(false);
+  const jumpBottomListener = useCallback(() => {
+    if (!isScrolledBottom()) {
+      setShowJump(true);
+    } else {
+      setShowJump(false);
+    }
+  }, []);
+  useEffect(() => {
+    window.addEventListener('scroll', jumpBottomListener);
+    jumpBottomListener();
+
+    return () => {
+      window.removeEventListener('scroll', jumpBottomListener);
+    };
+  }, [jumpBottomListener, thread.id]);
+
   const sendMessages = useCallback(
     async (messages: BedrockMessage[]) => {
       const cleanup = () => {
@@ -175,6 +192,7 @@ export default function Thread({
           content,
           id: uuid(),
         });
+        setTimeout(jumpBottomListener, 0);
       } catch (e: unknown) {
         enqueueSnackbar(`Error reading response: ${JSON.stringify(e)}`, {
           autoHideDuration: 3000,
@@ -184,7 +202,7 @@ export default function Thread({
         cleanup();
       }
     },
-    [addMessage, addTokens, awsCredProfile, thread.id],
+    [addMessage, addTokens, awsCredProfile, jumpBottomListener, thread.id],
   );
 
   const [loading, setLoading] = useState(created);
@@ -226,23 +244,6 @@ export default function Thread({
     needsTrigger.current = false;
     void sendMessages(thread.messages);
   }
-
-  const [showJump, setShowJump] = useState(false);
-  useEffect(() => {
-    const listener = () => {
-      if (!isScrolledBottom()) {
-        setShowJump(true);
-      } else {
-        setShowJump(false);
-      }
-    };
-    window.addEventListener('scroll', listener);
-    listener();
-
-    return () => {
-      window.removeEventListener('scroll', listener);
-    };
-  }, [thread]);
 
   return (
     <Box
