@@ -155,7 +155,7 @@ export default function Thread({
                     ...res.map((cb) => ({ text: cb.text }) as ContentBlock),
                   ];
                   if (response[index].text === undefined) {
-                    response[index].text = text;
+                    (response[index].text as unknown as string) = text;
                     content[index].text = text;
                   } else {
                     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
