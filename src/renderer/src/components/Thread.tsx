@@ -117,7 +117,7 @@ export default function Thread({
         region: 'us-west-2',
       });
       const command = new ConverseStreamCommand({
-        modelId: 'anthropic.claude-3-sonnet-20240229-v1:0',
+        modelId: 'anthropic.claude-3-5-sonnet-20240620-v1:0',
         messages,
       });
 
