@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.602.0",
+    "@aws-sdk/client-transcribe-streaming": "^3.624.0",
     "@aws-sdk/credential-providers": "^3.600.0",
     "@electron-toolkit/utils": "^3.0.0",
     "@emotion/react": "^11.11.4",
@@ -30,6 +31,7 @@
     "@mui/material": "^5.15.20",
     "electron-context-menu": "^4.0.1",
     "idb-keyval": "^6.2.1",
+    "microphone-stream": "^6.0.1",
     "notistack": "^3.0.1",
     "numeral": "^2.0.6",
     "react": "^18.2.0",
@@ -61,6 +63,7 @@
     "prettier": "^3.3.2",
     "typescript": "^5.2.2",
     "vite": "^5.2.0",
-    "vite-plugin-checker": "^0.7.0"
+    "vite-plugin-checker": "^0.7.0",
+    "vite-plugin-node-polyfills": "^0.22.0"
   }
 }

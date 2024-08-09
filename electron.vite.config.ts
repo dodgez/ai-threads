@@ -1,5 +1,6 @@
 import { defineConfig, externalizeDepsPlugin } from 'electron-vite';
 import { checker } from 'vite-plugin-checker';
+import { nodePolyfills } from 'vite-plugin-node-polyfills';
 
 /**
  * @type {import('electron-vite').UserConfig}
@@ -20,6 +21,7 @@ export default defineConfig({
         },
         typescript: true,
       }),
+      nodePolyfills(),
     ],
   },
 });

@@ -18,6 +18,8 @@ import type { ReactNode, RefObject } from 'react';
 import { useCallback, useRef, useState } from 'react';
 import { v4 as uuid } from 'uuid';
 
+import Transcriber from './Transcriber';
+
 const DocMimeTypeMapping: Record<string, DocumentFormat> = {
   'application/msword': DocumentFormat.DOC,
   'application/pdf': DocumentFormat.PDF,
@@ -132,6 +134,10 @@ export default function Input({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const onVoiceData = useCallback((transcript: string) => {
+    setMessage((message) => message + transcript);
+  }, []);
+
   return (
     <Box alignItems="end" bottom={0} position="sticky">
       <Box display="flex" justifyContent="center">
@@ -143,6 +149,7 @@ export default function Input({
         sx={{ backgroundColor: (theme) => theme.palette.background.default }}
       >
         <Box alignItems="center" display="flex">
+          <Transcriber onVoiceData={onVoiceData} />
           <TextField
             autoFocus
             disabled={loading}
