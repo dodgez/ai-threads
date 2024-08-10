@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-bedrock-runtime": "^3.602.0",
+    "@aws-sdk/client-polly": "^3.624.0",
     "@aws-sdk/client-transcribe-streaming": "^3.624.0",
     "@aws-sdk/credential-providers": "^3.600.0",
     "@electron-toolkit/utils": "^3.0.0",

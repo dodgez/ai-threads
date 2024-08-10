@@ -12,6 +12,7 @@ import { useCallback, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import highlight from 'rehype-highlight';
 
+import Synthesizer from './Synthesizer';
 import type { MessageType, ThreadType } from '../useThreadStore';
 import { useThreadStore } from '../useThreadStore';
 
@@ -132,12 +133,14 @@ export default function Message({
           {message.content?.[0]?.text ?? ''}
         </ReactMarkdown>
       </Paper>
-      <IconButton
-        onClick={onRemove}
-        sx={{ visibility: isHovered && message.id ? 'visible' : 'hidden' }}
-      >
-        <Delete />
-      </IconButton>
+      <Box sx={{ visibility: isHovered && message.id ? 'visible' : 'hidden' }}>
+        {message.content?.[0]?.text && (
+          <Synthesizer text={message.content[0]?.text ?? ''} />
+        )}
+        <IconButton onClick={onRemove}>
+          <Delete />
+        </IconButton>
+      </Box>
     </Box>
   );
 }
