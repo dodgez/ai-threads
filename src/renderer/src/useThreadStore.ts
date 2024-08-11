@@ -18,6 +18,7 @@ export type MessageType = BedrockMessage & { id: string };
 export interface ThreadType {
   id: string;
   messages: MessageType[];
+  model?: string;
   name: string;
 }
 
@@ -35,9 +36,10 @@ interface StoreState {
   awsCredProfile?: string;
   setAwsCredProfile: (state?: string) => void;
   threads: Record<ThreadType['id'], ThreadType | undefined>;
-  createThread: (message: MessageType) => ThreadType['id'];
+  createThread: (message: MessageType, model: string) => ThreadType['id'];
   renameThread: (id: ThreadType['id'], name: string) => void;
   deleteThread: (id: ThreadType['id']) => void;
+  setThreadModel: (id: ThreadType['id'], model: string) => void;
   addMessage: (id: ThreadType['id'], message: MessageType) => void;
   removeMessage: (id: ThreadType['id'], messageId: MessageType['id']) => void;
   tokens: { input: number; output: number };
@@ -56,13 +58,14 @@ export const useThreadStore = create<StoreState>()(
         set({ awsCredProfile: state });
       },
       threads: {},
-      createThread: (message: MessageType) => {
+      createThread: (message: MessageType, model: string) => {
         const id = uuid();
         set(({ threads }) => {
           const newThreads = { ...threads };
           newThreads[id] = {
             id,
             messages: [message],
+            model,
             name: 'New chat',
           };
           return { threads: newThreads };
@@ -129,6 +132,16 @@ export const useThreadStore = create<StoreState>()(
           return { threads: newThreads };
         });
       },
+      setThreadModel: (id: ThreadType['id'], model: string) => {
+        set(({ threads }) => {
+          const newThreads = { ...threads };
+          if (!newThreads[id]) return { threads };
+
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          newThreads[id] = { ...newThreads[id]!, model };
+          return { threads: newThreads };
+        });
+      },
       addMessage: (id: ThreadType['id'], message: MessageType) => {
         set(({ threads }) => {
           const newThreads = { ...threads };
@@ -138,6 +151,7 @@ export const useThreadStore = create<StoreState>()(
           newThreads[id] = {
             id,
             messages: thread.messages.concat(message),
+            model: thread.model,
             name: thread.name,
           };
           return { threads: newThreads };
@@ -154,6 +168,7 @@ export const useThreadStore = create<StoreState>()(
             messages: thread.messages.filter(
               (message) => message.id !== messageId,
             ),
+            model: thread.model,
             name: thread.name,
           };
           return { threads: newThreads };

@@ -5,9 +5,14 @@ import type {
 } from '@aws-sdk/client-bedrock-runtime';
 import { ConversationRole } from '@aws-sdk/client-bedrock-runtime';
 import Box from '@mui/material/Box';
+import Container from '@mui/material/Container';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
+import MenuItem from '@mui/material/MenuItem';
+import Select from '@mui/material/Select';
 import useTheme from '@mui/material/styles/useTheme';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { v4 as uuid } from 'uuid';
 
 import Input from './Input';
@@ -21,27 +26,31 @@ export default function LandingPage({
   onCreate: (id: ThreadType['id']) => void;
 }) {
   const createThread = useThreadStore((state) => state.createThread);
+  const [model, setModel] = useState('anthropic.claude-3-haiku-20240307-v1:0');
 
   const onSubmit = useCallback(
     (message: string, docs: DocumentBlock[], images: ImageBlock[]) => {
-      const newId = createThread({
-        role: ConversationRole.USER,
-        content: [
-          { text: message, id: uuid() } as ContentBlock,
-          ...docs.map((doc) => ({
-            document: doc,
-            id: uuid(),
-          })),
-          ...images.map((image) => ({
-            image,
-            id: uuid(),
-          })),
-        ],
-        id: uuid(),
-      });
+      const newId = createThread(
+        {
+          role: ConversationRole.USER,
+          content: [
+            { text: message, id: uuid() } as ContentBlock,
+            ...docs.map((doc) => ({
+              document: doc,
+              id: uuid(),
+            })),
+            ...images.map((image) => ({
+              image,
+              id: uuid(),
+            })),
+          ],
+          id: uuid(),
+        },
+        model,
+      );
       onCreate(newId);
     },
-    [createThread, onCreate],
+    [createThread, model, onCreate],
   );
 
   const theme = useTheme();
@@ -78,6 +87,29 @@ export default function LandingPage({
             />
           )}
         </Box>
+        <Container maxWidth="sm" sx={{ pt: 2 }}>
+          <FormControl fullWidth>
+            <InputLabel id="bedrock-model-label">Bedrock model</InputLabel>
+            <Select
+              label="Bedrock model"
+              labelId="bedrock-model-label"
+              onChange={({ target }) => {
+                setModel(target.value);
+              }}
+              value={model}
+            >
+              <MenuItem value="anthropic.claude-3-sonnet-20240229-v1:0">
+                Anthropic Claude 3 Sonnet
+              </MenuItem>
+              <MenuItem value="anthropic.claude-3-haiku-20240307-v1:0">
+                Anthropic Claude 3 Haiku
+              </MenuItem>
+              <MenuItem value="anthropic.claude-3-5-sonnet-20240620-v1:0">
+                Anthropic Claude 3.5 Sonnet (no document support)
+              </MenuItem>
+            </Select>
+          </FormControl>
+        </Container>
       </Box>
       <Input onSubmit={onSubmit} />
     </Box>

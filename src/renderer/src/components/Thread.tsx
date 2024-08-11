@@ -12,6 +12,10 @@ import {
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
+import MenuItem from '@mui/material/MenuItem';
+import Select from '@mui/material/Select';
 import Stack from '@mui/material/Stack';
 import type { AwsCredentialIdentity } from '@smithy/types';
 import { enqueueSnackbar } from 'notistack';
@@ -45,6 +49,7 @@ export default function Thread({
 }) {
   const addMessage = useThreadStore((state) => state.addMessage);
   const addTokens = useThreadStore((state) => state.addTokens);
+  const setThreadModel = useThreadStore((state) => state.setThreadModel);
   const awsCredProfile = useThreadStore((state) => state.awsCredProfile);
   const [streamingResponse, setStreamingResponse] =
     useState<MessageType['content']>();
@@ -117,7 +122,7 @@ export default function Thread({
         region: 'us-west-2',
       });
       const command = new ConverseStreamCommand({
-        modelId: 'anthropic.claude-3-5-sonnet-20240620-v1:0',
+        modelId: thread.model,
         messages,
       });
 
@@ -202,7 +207,14 @@ export default function Thread({
         cleanup();
       }
     },
-    [addMessage, addTokens, awsCredProfile, jumpBottomListener, thread.id],
+    [
+      addMessage,
+      addTokens,
+      awsCredProfile,
+      jumpBottomListener,
+      thread.id,
+      thread.model,
+    ],
   );
 
   const [loading, setLoading] = useState(created);
@@ -262,6 +274,27 @@ export default function Thread({
     >
       <Container maxWidth="lg" sx={{ flexGrow: 1, p: 2 }}>
         <Stack spacing={2}>
+          <FormControl fullWidth>
+            <InputLabel id="bedrock-model-label">Bedrock model</InputLabel>
+            <Select
+              label="Bedrock model"
+              labelId="bedrock-model-label"
+              onChange={({ target }) => {
+                setThreadModel(thread.id, target.value);
+              }}
+              value={thread.model ?? 'anthropic.claude-3-haiku-20240307-v1:0'}
+            >
+              <MenuItem value="anthropic.claude-3-sonnet-20240229-v1:0">
+                Anthropic Claude 3 Sonnet
+              </MenuItem>
+              <MenuItem value="anthropic.claude-3-haiku-20240307-v1:0">
+                Anthropic Claude 3 Haiku
+              </MenuItem>
+              <MenuItem value="anthropic.claude-3-5-sonnet-20240620-v1:0">
+                Anthropic Claude 3.5 Sonnet (no document support)
+              </MenuItem>
+            </Select>
+          </FormControl>
           {thread.messages.map((message) => (
             <Message key={message.id} message={message} thread={thread} />
           ))}
