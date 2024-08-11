@@ -5,12 +5,13 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Drawer from '@mui/material/Drawer';
 import IconButton from '@mui/material/IconButton';
 import Modal from '@mui/material/Modal';
+import Slider from '@mui/material/Slider';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { SnackbarProvider } from 'notistack';
 import numeral from 'numeral';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import LandingPage from './LandingPage';
 import Thread from './Thread';
@@ -28,6 +29,10 @@ export default function Layout() {
   const tokens = useThreadStore((state) => state.tokens);
   const playbackSpeed = useThreadStore((state) => state.playbackSpeed);
   const setPlaybackSpeed = useThreadStore((state) => state.setPlaybackSpeed);
+  const [tempPlaybackSpeed, setTempPlaybackSpeed] = useState(playbackSpeed);
+  useEffect(() => {
+    setTempPlaybackSpeed(playbackSpeed);
+  }, [playbackSpeed]);
 
   // Pass to the thread to trigger call during screen transition
   const [lastCreatedThreadId, setLastCreatedThreadId] =
@@ -131,15 +136,26 @@ export default function Layout() {
           width="400px"
         >
           <Stack spacing={2}>
-            <TextField
-              inputProps={{ max: 4, min: 0.25, step: 0.25 }}
-              label="Synthesizer playback speed"
-              onChange={({ target }) => {
-                setPlaybackSpeed(Number(target.value));
-              }}
-              type="number"
-              value={playbackSpeed}
-            />
+            <Box alignItems="center" display="flex" flexDirection="row">
+              <Typography sx={{ textWrap: 'nowrap', pr: 2 }}>
+                Playback speed
+              </Typography>
+              <Slider
+                marks
+                max={4}
+                min={0.25}
+                onChange={(_, value) => {
+                  setTempPlaybackSpeed(value as number);
+                }}
+                onChangeCommitted={(_, value) => {
+                  setPlaybackSpeed(value as number);
+                }}
+                step={0.25}
+                sx={{ pt: 4 }}
+                value={tempPlaybackSpeed}
+                valueLabelDisplay="on"
+              />
+            </Box>
             <TextField
               onChange={({ target }) => {
                 if (target.value === '') {
