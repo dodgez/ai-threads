@@ -8,7 +8,7 @@ import IconButton from '@mui/material/IconButton';
 import type { AwsCredentialIdentity } from '@smithy/types';
 import MicrophoneStream from 'microphone-stream';
 import { enqueueSnackbar } from 'notistack';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 import { useThreadStore } from '../useThreadStore';
 
@@ -22,27 +22,7 @@ export default function Transcriber({
 }) {
   const awsCredProfile = useThreadStore((state) => state.awsCredProfile);
   const [isRecording, setIsRecording] = useState(false);
-  const [client, setClient] = useState<TranscribeStreamingClient>();
   const stream = useRef<MicrophoneStream>();
-
-  useEffect(() => {
-    ipcRenderer
-      .invoke('creds', awsCredProfile)
-      .then((creds: AwsCredentialIdentity | undefined) => {
-        if (!creds) return;
-        const newClient = new TranscribeStreamingClient({
-          region: 'us-west-2',
-          credentials: creds,
-        });
-        setClient(newClient);
-      })
-      .catch((e: unknown) => {
-        enqueueSnackbar(`Error getting credentials: ${JSON.stringify(e)}`, {
-          autoHideDuration: 3000,
-          variant: 'error',
-        });
-      });
-  }, [awsCredProfile]);
 
   const stopRecording = useCallback(() => {
     setIsRecording(false);
@@ -53,7 +33,20 @@ export default function Transcriber({
   }, [stream]);
 
   const startRecording = useCallback(async () => {
-    if (!client) return;
+    const creds = (await ipcRenderer
+      .invoke('creds', awsCredProfile)
+      .catch((e: unknown) => {
+        enqueueSnackbar(`Error getting credentials: ${JSON.stringify(e)}`, {
+          autoHideDuration: 3000,
+          variant: 'error',
+        });
+      })) as AwsCredentialIdentity | undefined;
+    if (!creds) return;
+
+    const client = new TranscribeStreamingClient({
+      region: 'us-west-2',
+      credentials: creds,
+    });
 
     setIsRecording(true);
 
@@ -136,7 +129,7 @@ export default function Transcriber({
       );
       stopRecording();
     }
-  }, [client, onVoiceData, stopRecording]);
+  }, [awsCredProfile, onVoiceData, stopRecording]);
 
   return (
     <IconButton onClick={isRecording ? stopRecording : startRecording}>

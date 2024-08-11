@@ -26,6 +26,8 @@ export default function Layout() {
   const [activeThreadId, setActiveThreadId] = useState<ThreadType['id']>();
   const activeThread = activeThreadId ? threads[activeThreadId] : undefined;
   const tokens = useThreadStore((state) => state.tokens);
+  const playbackSpeed = useThreadStore((state) => state.playbackSpeed);
+  const setPlaybackSpeed = useThreadStore((state) => state.setPlaybackSpeed);
 
   // Pass to the thread to trigger call during screen transition
   const [lastCreatedThreadId, setLastCreatedThreadId] =
@@ -129,6 +131,15 @@ export default function Layout() {
           width="400px"
         >
           <Stack spacing={2}>
+            <TextField
+              inputProps={{ max: 4, min: 0.25, step: 0.25 }}
+              label="Synthesizer playback speed"
+              onChange={({ target }) => {
+                setPlaybackSpeed(Number(target.value));
+              }}
+              type="number"
+              value={playbackSpeed}
+            />
             <TextField
               onChange={({ target }) => {
                 if (target.value === '') {

@@ -33,6 +33,8 @@ const storage: StateStorage = {
 interface StoreState {
   _hasHydrated: boolean;
   setHasHydrated: (state: boolean) => void;
+  playbackSpeed: number;
+  setPlaybackSpeed: (playbackSpeed: number) => void;
   awsCredProfile?: string;
   setAwsCredProfile: (state?: string) => void;
   threads: Record<ThreadType['id'], ThreadType | undefined>;
@@ -52,6 +54,10 @@ export const useThreadStore = create<StoreState>()(
       _hasHydrated: false,
       setHasHydrated: (state: boolean) => {
         set({ _hasHydrated: state });
+      },
+      playbackSpeed: 1.5,
+      setPlaybackSpeed: (playbackSpeed: number) => {
+        set({ playbackSpeed });
       },
       awsCredProfile: undefined,
       setAwsCredProfile: (state?: string) => {
@@ -94,7 +100,7 @@ export const useThreadStore = create<StoreState>()(
             region: 'us-west-2',
           });
           const command = new ConverseCommand({
-            modelId: 'anthropic.claude-3-5-sonnet-20240620-v1:0',
+            modelId: model,
             messages,
           });
 
@@ -192,7 +198,9 @@ export const useThreadStore = create<StoreState>()(
       partialize: (state) =>
         Object.fromEntries(
           Object.entries(state).filter(([key]) =>
-            ['threads', 'tokens'].includes(key),
+            ['awsCredProfile', 'playbackSpeed', 'threads', 'tokens'].includes(
+              key,
+            ),
           ),
         ),
       storage: createJSONStorage(() => storage),

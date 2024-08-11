@@ -13,6 +13,7 @@ import IconButton from '@mui/material/IconButton';
 import type { AwsCredentialIdentity } from '@smithy/types';
 import { enqueueSnackbar } from 'notistack';
 import { useCallback, useState } from 'react';
+import { PitchShifter } from 'soundtouchjs';
 
 import { useThreadStore } from '../useThreadStore';
 
@@ -21,6 +22,7 @@ const { ipcRenderer } = require('electron');
 
 export default function Synthesizer({ text }: { text: string }) {
   const awsCredProfile = useThreadStore((state) => state.awsCredProfile);
+  const playbackSpeed = useThreadStore((state) => state.playbackSpeed);
   const [audioContext, setAudioContext] = useState<AudioContext>();
   const [sourceNode, setSourceNode] = useState<AudioBufferSourceNode>();
   const [isPlaying, setPlaying] = useState(false);
@@ -89,13 +91,20 @@ export default function Synthesizer({ text }: { text: string }) {
 
         setPlaying(true);
         await audioContext.decodeAudioData(audioData.buffer, (buffer) => {
-          source.buffer = buffer;
-          source.connect(audioContext.destination);
+          const shifter = new PitchShifter(audioContext, buffer, 16384);
+          shifter.tempo = playbackSpeed;
+
+          const source = shifter.sourceNode;
+          setSourceNode(source);
+
+          shifter.connect(audioContext.destination);
+
           source.onended = () => {
             setPlaying(false);
             setSourceNode(undefined);
             setAudioContext(undefined);
           };
+
           source.start(0);
         });
       }
@@ -105,7 +114,7 @@ export default function Synthesizer({ text }: { text: string }) {
         variant: 'error',
       });
     }
-  }, [awsCredProfile, text]);
+  }, [awsCredProfile, playbackSpeed, text]);
 
   const stopPlayback = useCallback(() => {
     if (sourceNode) {
