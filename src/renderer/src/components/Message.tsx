@@ -1,5 +1,3 @@
-import type { ContentBlock, ImageBlock } from '@aws-sdk/client-bedrock-runtime';
-import { ConversationRole } from '@aws-sdk/client-bedrock-runtime';
 import Delete from '@mui/icons-material/Delete';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
@@ -8,29 +6,49 @@ import Link from '@mui/material/Link';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import type {
+  FilePart,
+  ImagePart,
+  TextPart,
+  ToolCallPart,
+  ToolResultPart,
+} from 'ai';
 import { useCallback, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import highlight from 'rehype-highlight';
 
 import Synthesizer from './Synthesizer';
-import type { MessageType, ThreadType } from '../useThreadStore';
+import type { MessageType, ThreadType } from '../types';
 import { useThreadStore } from '../useThreadStore';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { shell } = require('electron');
 
-function Content({ contentBlock }: { contentBlock: ContentBlock }) {
-  if (contentBlock.text) {
+function Content({
+  contentBlock,
+}: {
+  contentBlock: TextPart | ImagePart | FilePart | ToolCallPart | ToolResultPart;
+}) {
+  if (contentBlock.type === 'text') {
     return (
       <Typography sx={{ whiteSpace: 'pre-wrap' }}>
         {contentBlock.text}
       </Typography>
     );
-  } else if (contentBlock.document) {
-    return <Chip color="info" label={contentBlock.document.name} />;
-  } else if (contentBlock.image) {
-    const image = contentBlock.image as ImageBlock & { name: string };
-    return <Chip color="info" label={image.name} />;
+  } else if (contentBlock.type === 'image') {
+    return (
+      <Chip
+        color="info"
+        label={(contentBlock as unknown as { name: string }).name}
+      />
+    );
+  } else if (contentBlock.type === 'file') {
+    return (
+      <Chip
+        color="info"
+        label={(contentBlock as unknown as { name: string }).name}
+      />
+    );
   }
 
   return null;
@@ -54,8 +72,12 @@ export default function Message({
   }, [message.id, removeMessage, thread.id]);
 
   const [isHovered, setHovered] = useState(false);
+  const messageText =
+    typeof message.content === 'string'
+      ? message.content
+      : (message.content[0] as TextPart | undefined)?.text;
 
-  return message.role === ConversationRole.USER ? (
+  return message.role === 'user' ? (
     <Box
       alignItems="center"
       display="flex"
@@ -85,12 +107,18 @@ export default function Message({
         }}
       >
         <Stack spacing={1}>
-          {message.content?.map((cb) => (
-            <Content
-              contentBlock={cb}
-              key={(cb as ContentBlock & { id: string }).id}
-            />
-          ))}
+          {typeof message.content === 'string' ? (
+            <Typography sx={{ whiteSpace: 'pre-wrap' }}>
+              {message.content}
+            </Typography>
+          ) : (
+            message.content.map((cb) => (
+              <Content
+                contentBlock={cb}
+                key={(cb as unknown as { id: string }).id}
+              />
+            ))
+          )}
         </Stack>
       </Paper>
     </Box>
@@ -130,13 +158,11 @@ export default function Message({
           }}
           rehypePlugins={[highlight]}
         >
-          {message.content?.[0]?.text ?? ''}
+          {messageText ?? ''}
         </ReactMarkdown>
       </Paper>
       <Box sx={{ visibility: isHovered && message.id ? 'visible' : 'hidden' }}>
-        {message.content?.[0]?.text && (
-          <Synthesizer text={message.content[0]?.text ?? ''} />
-        )}
+        {messageText && <Synthesizer text={messageText} />}
         <IconButton onClick={onRemove}>
           <Delete />
         </IconButton>

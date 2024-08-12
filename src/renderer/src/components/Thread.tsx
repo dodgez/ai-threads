@@ -1,14 +1,4 @@
-import type {
-  Message as BedrockMessage,
-  ContentBlock,
-  DocumentBlock,
-  ImageBlock,
-} from '@aws-sdk/client-bedrock-runtime';
-import {
-  BedrockRuntimeClient,
-  ConversationRole,
-  ConverseStreamCommand,
-} from '@aws-sdk/client-bedrock-runtime';
+import { createAmazonBedrock } from '@ai-sdk/amazon-bedrock';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
@@ -18,13 +8,21 @@ import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import Stack from '@mui/material/Stack';
 import type { AwsCredentialIdentity } from '@smithy/types';
+import type { CoreMessage } from 'ai';
+import { streamText } from 'ai';
 import { enqueueSnackbar } from 'notistack';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { v4 as uuid } from 'uuid';
 
 import Input from './Input';
 import Message from './Message';
-import type { MessageType, ThreadType } from '../useThreadStore';
+import type {
+  FilePart,
+  ImagePart,
+  MessageType,
+  TextPart,
+  ThreadType,
+} from '../types';
 import { useThreadStore } from '../useThreadStore';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -51,8 +49,7 @@ export default function Thread({
   const addTokens = useThreadStore((state) => state.addTokens);
   const setThreadModel = useThreadStore((state) => state.setThreadModel);
   const awsCredProfile = useThreadStore((state) => state.awsCredProfile);
-  const [streamingResponse, setStreamingResponse] =
-    useState<MessageType['content']>();
+  const [streamingResponse, setStreamingResponse] = useState<string>();
 
   // Used for scrolling messages into view
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -90,7 +87,7 @@ export default function Thread({
   }, [jumpBottomListener, thread.id]);
 
   const sendMessages = useCallback(
-    async (messages: BedrockMessage[]) => {
+    async (messages: CoreMessage[]) => {
       const cleanup = () => {
         aborted.current = false;
         setLoading(false);
@@ -117,93 +114,51 @@ export default function Thread({
         return;
       }
 
-      const client = new BedrockRuntimeClient({
-        credentials: creds,
-        region: 'us-west-2',
-      });
-      const command = new ConverseStreamCommand({
-        modelId: thread.model,
-        messages,
+      const bedrock = createAmazonBedrock({
+        bedrockOptions: {
+          credentials: creds,
+          region: 'us-west-2',
+        },
       });
 
-      const { stream } = await client.send(command).catch((e: unknown) => {
+      const { textStream } = await streamText({
+        onFinish: (evt) => {
+          addMessage(thread.id, {
+            role: 'assistant',
+            content: [{ type: 'text', text: evt.text }],
+            id: uuid(),
+          });
+          addTokens(evt.usage.promptTokens, evt.usage.completionTokens);
+          cleanup();
+          setTimeout(jumpBottomListener, 0);
+        },
+        model: bedrock(
+          thread.model ?? 'anthropic.claude-3-haiku-20240307-v1:0',
+        ),
+        messages,
+      }).catch((e: unknown) => {
         enqueueSnackbar(`Error sending messages: ${JSON.stringify(e)}`, {
           autoHideDuration: 3000,
           variant: 'error',
         });
-        return { stream: undefined };
+        return { textStream: undefined };
       });
 
-      if (!stream) {
+      if (!textStream) {
         cleanup();
         return;
       }
 
-      let content: ContentBlock[] = [];
+      setStreamingResponse('');
       try {
-        for await (const data of stream) {
-          if (data.messageStart) {
-            setStreamingResponse([{ text: '' }]);
-            content = [{ text: '' }];
-          } else if (data.contentBlockDelta) {
-            if (aborted.current) {
-              break;
-            }
-            if (data.contentBlockDelta.contentBlockIndex !== undefined) {
-              if (data.contentBlockDelta.delta?.text !== undefined) {
-                const index = data.contentBlockDelta.contentBlockIndex;
-                const text = data.contentBlockDelta.delta.text.toString();
-                setStreamingResponse((res) => {
-                  if (!res) return res;
-
-                  const response = [
-                    ...res.map((cb) => ({ text: cb.text }) as ContentBlock),
-                  ];
-                  if (response[index].text === undefined) {
-                    (response[index].text as unknown as string) = text;
-                    content[index].text = text;
-                  } else {
-                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                    response[index].text! += text;
-                    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-                    content[index].text! += text;
-                  }
-
-                  return response;
-                });
-                if (isScrolledBottom()) {
-                  bottomRef.current?.scrollIntoView({
-                    behavior: 'auto',
-                  });
-                }
-              }
-            }
-          } else if (data.metadata) {
-            if (
-              data.metadata.usage?.inputTokens === undefined ||
-              data.metadata.usage.outputTokens == undefined
-            ) {
-              continue;
-            }
-            addTokens(
-              data.metadata.usage.inputTokens,
-              data.metadata.usage.outputTokens,
-            );
-          }
+        for await (const text of textStream) {
+          setStreamingResponse((res) => (res ?? '') + text);
         }
-
-        addMessage(thread.id, {
-          role: ConversationRole.ASSISTANT,
-          content,
-          id: uuid(),
-        });
-        setTimeout(jumpBottomListener, 0);
       } catch (e: unknown) {
         enqueueSnackbar(`Error reading response: ${JSON.stringify(e)}`, {
           autoHideDuration: 3000,
           variant: 'error',
         });
-      } finally {
         cleanup();
       }
     },
@@ -219,28 +174,22 @@ export default function Thread({
 
   const [loading, setLoading] = useState(created);
   const onSubmit = useCallback(
-    (message: string, docs: DocumentBlock[], images: ImageBlock[]) => {
+    (message: string, docs: FilePart[], images: ImagePart[]) => {
       setLoading(true);
       if (
         thread.messages.length > 0 &&
-        thread.messages[thread.messages.length - 1].role ===
-          ConversationRole.USER
+        thread.messages[thread.messages.length - 1].role === 'user'
       ) {
         void sendMessages(thread.messages);
       } else {
-        const newMessage = {
-          role: ConversationRole.USER,
-          content: [
-            { text: message, id: uuid() },
-            ...docs.map((doc) => ({
-              document: doc,
-              id: uuid(),
-            })),
-            ...images.map((image) => ({
-              image,
-              id: uuid(),
-            })),
-          ],
+        const newTextMessage: TextPart = {
+          type: 'text',
+          text: message,
+          id: uuid(),
+        };
+        const newMessage: MessageType = {
+          role: 'user',
+          content: [newTextMessage, ...docs, ...images],
           id: uuid(),
         };
         addMessage(thread.id, newMessage);
@@ -301,8 +250,8 @@ export default function Thread({
           {streamingResponse && (
             <Message
               message={{
-                role: ConversationRole.ASSISTANT,
-                content: streamingResponse,
+                role: 'assistant',
+                content: [{ type: 'text', text: streamingResponse }],
                 id: undefined,
               }}
               thread={thread}
@@ -339,8 +288,7 @@ export default function Thread({
         onSubmit={onSubmit}
         overrideCanSubmit={
           thread.messages.length > 0 &&
-          thread.messages[thread.messages.length - 1].role ===
-            ConversationRole.USER
+          thread.messages[thread.messages.length - 1].role === 'user'
         }
       />
     </Box>

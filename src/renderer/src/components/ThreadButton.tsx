@@ -10,7 +10,7 @@ import TextField from '@mui/material/TextField';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useState } from 'react';
 
-import type { ThreadType } from '../useThreadStore';
+import type { ThreadType } from '../types';
 import { useThreadStore } from '../useThreadStore';
 
 export default function ThreadButton({

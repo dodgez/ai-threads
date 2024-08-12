@@ -16,7 +16,7 @@ import { useCallback, useEffect, useState } from 'react';
 import LandingPage from './LandingPage';
 import Thread from './Thread';
 import ThreadButton from './ThreadButton';
-import type { ThreadType } from '../useThreadStore';
+import type { ThreadType } from '../types';
 import { useThreadStore } from '../useThreadStore';
 
 export default function Layout() {

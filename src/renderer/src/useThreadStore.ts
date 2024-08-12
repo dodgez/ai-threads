@@ -1,26 +1,20 @@
-import type { Message as BedrockMessage } from '@aws-sdk/client-bedrock-runtime';
 import {
   BedrockRuntimeClient,
   ConversationRole,
   ConverseCommand,
 } from '@aws-sdk/client-bedrock-runtime';
 import type { AwsCredentialIdentity } from '@smithy/types';
+import type { TextPart } from 'ai';
 import { del, get, set } from 'idb-keyval';
 import { v4 as uuid } from 'uuid';
 import { create } from 'zustand';
 import type { StateStorage } from 'zustand/middleware';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
+import type { MessageType, ThreadType } from './types';
+
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { ipcRenderer } = require('electron');
-
-export type MessageType = BedrockMessage & { id: string };
-export interface ThreadType {
-  id: string;
-  messages: MessageType[];
-  model?: string;
-  name: string;
-}
 
 const storage: StateStorage = {
   getItem: async (name: string): Promise<string | null> =>
@@ -78,13 +72,17 @@ export const useThreadStore = create<StoreState>()(
         });
 
         void (async () => {
-          if (!message.content?.[0]?.text) return 'New chat';
+          const firstMessage =
+            typeof message.content === 'string'
+              ? message.content
+              : (message.content[0] as TextPart | undefined)?.text;
+          if (!firstMessage) return 'New chat';
           const messages = [
             {
               role: ConversationRole.USER,
               content: [
                 {
-                  text: `Based on this opening question: "${message.content[0].text}", what would be a concise and descriptive name for this conversation thread? Only provide the name, not any other information or explanation.`,
+                  text: `Based on this opening question: "${firstMessage}", what would be a concise and descriptive name for this conversation thread? Only provide the name, not any other information or explanation.`,
                 },
               ],
             },
@@ -111,8 +109,7 @@ export const useThreadStore = create<StoreState>()(
             const newThreads = { ...threads };
             if (!newThreads[id]) return { threads };
             newThreads[id] = {
-              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-              ...newThreads[id]!,
+              ...newThreads[id],
               name,
             };
             return { threads: newThreads };
@@ -126,8 +123,7 @@ export const useThreadStore = create<StoreState>()(
           const newThreads = { ...threads };
           if (!newThreads[id]) return { threads };
 
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          newThreads[id] = { ...newThreads[id]!, name };
+          newThreads[id] = { ...newThreads[id], name };
           return { threads: newThreads };
         });
       },
@@ -143,8 +139,7 @@ export const useThreadStore = create<StoreState>()(
           const newThreads = { ...threads };
           if (!newThreads[id]) return { threads };
 
-          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-          newThreads[id] = { ...newThreads[id]!, model };
+          newThreads[id] = { ...newThreads[id], model };
           return { threads: newThreads };
         });
       },

@@ -1,8 +1,3 @@
-import type {
-  DocumentBlock,
-  ImageBlock,
-} from '@aws-sdk/client-bedrock-runtime';
-import { DocumentFormat, ImageFormat } from '@aws-sdk/client-bedrock-runtime';
 import ArrowUpwardRounded from '@mui/icons-material/ArrowUpwardRounded';
 import CloudUpload from '@mui/icons-material/CloudUpload';
 import Stop from '@mui/icons-material/Stop';
@@ -19,30 +14,8 @@ import { useCallback, useRef, useState } from 'react';
 import { v4 as uuid } from 'uuid';
 
 import Transcriber from './Transcriber';
-
-const DocMimeTypeMapping: Record<string, DocumentFormat> = {
-  'application/msword': DocumentFormat.DOC,
-  'application/pdf': DocumentFormat.PDF,
-  'application/vnd.ms-excel': DocumentFormat.XLS,
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
-    DocumentFormat.XLSX,
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-    DocumentFormat.DOCX,
-  'text/csv': DocumentFormat.CSV,
-  'text/html': DocumentFormat.HTML,
-  'text/markdown': DocumentFormat.MD,
-  'text/plain': DocumentFormat.TXT,
-};
-
-const ImageMimeTypeMapping: Record<string, ImageFormat> = {
-  'image/gif': ImageFormat.GIF,
-  'image/jpeg': ImageFormat.JPEG,
-  'image/png': ImageFormat.PNG,
-  'image/webp': ImageFormat.WEBP,
-};
-
-type DocType = DocumentBlock & { id: string; name: string };
-type ImageType = ImageBlock & { id: string; name: string };
+import type { FilePart, ImagePart } from '../types';
+import { DocMimeTypeMapping, ImageMimeTypeMapping } from '../types';
 
 export default function Input({
   inputRef,
@@ -56,52 +29,50 @@ export default function Input({
   jumpButton?: ReactNode;
   loading?: boolean;
   onCancel?: () => void;
-  onSubmit: (
-    message: string,
-    docs: DocumentBlock[],
-    images: ImageBlock[],
-  ) => void;
+  onSubmit: (message: string, docs: FilePart[], images: ImagePart[]) => void;
   overrideCanSubmit?: boolean;
 }) {
   const [message, setMessage] = useState('');
-  const [docs, setDocs] = useState<(DocumentBlock & { id: string })[]>([]);
-  const [images, setImages] = useState<
-    (ImageBlock & { id: string; name: string })[]
-  >([]);
+  const [docs, setDocs] = useState<FilePart[]>([]);
+  const [images, setImages] = useState<ImagePart[]>([]);
 
   const uploadDocs = useCallback(async (files: File[]) => {
-    const newDocs: (DocType | undefined)[] = await Promise.all(
+    const newDocs: (FilePart | undefined)[] = await Promise.all(
       files.map(async (file) => {
-        const format = DocMimeTypeMapping[file.type];
-        const buffer = await file.arrayBuffer().catch((e: unknown) => {
-          enqueueSnackbar(
-            `Error uploading ${file.name}: ${JSON.stringify(e)}`,
-            {
+        const data: string | undefined = await new Promise((resolve) => {
+          const reader = new FileReader();
+
+          reader.onload = () => {
+            resolve(reader.result as string);
+          };
+
+          reader.onerror = () => {
+            enqueueSnackbar(`Error reading ${file.name}`, {
               autoHideDuration: 3000,
               variant: 'error',
-            },
-          );
+            });
+            resolve(undefined);
+          };
+          reader.readAsDataURL(file);
         });
-        if (!buffer) return undefined;
-        const bytes = new Uint8Array(buffer);
+        if (!data) return undefined;
         return {
-          format,
-          source: {
-            bytes,
-          },
+          type: 'file',
+          file: data,
           id: uuid(),
           name: file.name.replace(/\.\w+$/, ''),
+          mimeType: file.type,
         };
       }),
     );
     const filteredDocs = newDocs.filter(
-      (doc?: DocType): doc is DocType => !!doc,
+      (doc?: FilePart): doc is FilePart => !!doc,
     );
 
     setDocs((docs) => docs.concat(filteredDocs));
   }, []);
   const uploadImages = useCallback(async (files: File[]) => {
-    const newImages: (ImageType | undefined)[] = await Promise.all(
+    const newImages: (ImagePart | undefined)[] = await Promise.all(
       files.map(async (file) => {
         const format = ImageMimeTypeMapping[file.type];
         const buffer = await file.arrayBuffer().catch((e: unknown) => {
@@ -114,19 +85,17 @@ export default function Input({
           );
         });
         if (!buffer) return undefined;
-        const bytes = new Uint8Array(buffer);
         return {
+          type: 'image',
           format,
-          source: {
-            bytes,
-          },
+          image: Buffer.from(buffer).toString('base64'),
           id: uuid(),
           name: file.name,
         };
       }),
     );
     const filteredImages = newImages.filter(
-      (img?: ImageType): img is ImageType => !!img,
+      (img?: ImagePart): img is ImagePart => !!img,
     );
 
     setImages((images) => images.concat(filteredImages));

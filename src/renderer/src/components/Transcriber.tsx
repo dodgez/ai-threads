@@ -112,9 +112,6 @@ export default function Transcriber({
             if (!!result.IsPartial || !result.Alternatives?.[0]?.Transcript) {
               continue;
             }
-            console.log(
-              `I heard '${result.Alternatives[0].Transcript ?? 'nothing'}'`,
-            );
             onVoiceData(result.Alternatives[0].Transcript);
           }
         }

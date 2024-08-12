@@ -20,6 +20,7 @@
     "start": "electron-vite dev"
   },
   "dependencies": {
+    "@ai-sdk/amazon-bedrock": "https://github.com/dodgez/ai/releases/download/%40ai-sdk%2Famazon-bedrock%401.0.1/amazon-bedrock.tar.gz",
     "@aws-sdk/client-bedrock-runtime": "^3.602.0",
     "@aws-sdk/client-polly": "^3.624.0",
     "@aws-sdk/client-transcribe-streaming": "^3.624.0",
@@ -30,6 +31,7 @@
     "@fontsource/roboto": "^5.0.13",
     "@mui/icons-material": "^5.15.20",
     "@mui/material": "^5.15.20",
+    "ai": "https://github.com/dodgez/ai/releases/download/ai%401.0.0/ai.tar.gz",
     "electron-context-menu": "^4.0.1",
     "idb-keyval": "^6.2.1",
     "microphone-stream": "^6.0.1",
@@ -67,5 +69,6 @@
     "vite": "^5.2.0",
     "vite-plugin-checker": "^0.7.0",
     "vite-plugin-node-polyfills": "^0.22.0"
-  }
+  },
+  "packageManager": "pnpm@9.7.0+sha512.dc09430156b427f5ecfc79888899e1c39d2d690f004be70e05230b72cb173d96839587545d09429b55ac3c429c801b4dc3c0e002f653830a420fa2dd4e3cf9cf"
 }

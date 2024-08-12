@@ -1,9 +1,3 @@
-import type {
-  ContentBlock,
-  DocumentBlock,
-  ImageBlock,
-} from '@aws-sdk/client-bedrock-runtime';
-import { ConversationRole } from '@aws-sdk/client-bedrock-runtime';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import FormControl from '@mui/material/FormControl';
@@ -12,12 +6,13 @@ import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
 import useTheme from '@mui/material/styles/useTheme';
 import useMediaQuery from '@mui/material/useMediaQuery';
+import type { TextPart } from 'ai';
 import { useCallback, useState } from 'react';
 import { v4 as uuid } from 'uuid';
 
 import Input from './Input';
 import Suggestion from './Suggestion';
-import type { ThreadType } from '../useThreadStore';
+import type { FilePart, ImagePart, ThreadType } from '../types';
 import { useThreadStore } from '../useThreadStore';
 
 export default function LandingPage({
@@ -29,21 +24,16 @@ export default function LandingPage({
   const [model, setModel] = useState('anthropic.claude-3-haiku-20240307-v1:0');
 
   const onSubmit = useCallback(
-    (message: string, docs: DocumentBlock[], images: ImageBlock[]) => {
+    (message: string, docs: FilePart[], images: ImagePart[]) => {
+      const newMessage: TextPart & { id: string } = {
+        type: 'text',
+        text: message,
+        id: uuid(),
+      };
       const newId = createThread(
         {
-          role: ConversationRole.USER,
-          content: [
-            { text: message, id: uuid() } as ContentBlock,
-            ...docs.map((doc) => ({
-              document: doc,
-              id: uuid(),
-            })),
-            ...images.map((image) => ({
-              image,
-              id: uuid(),
-            })),
-          ],
+          role: 'user',
+          content: [newMessage, ...docs, ...images],
           id: uuid(),
         },
         model,
