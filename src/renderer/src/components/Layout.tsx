@@ -5,13 +5,12 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Drawer from '@mui/material/Drawer';
 import IconButton from '@mui/material/IconButton';
 import Modal from '@mui/material/Modal';
-import Slider from '@mui/material/Slider';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { SnackbarProvider } from 'notistack';
 import numeral from 'numeral';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import LandingPage from './LandingPage';
 import Thread from './Thread';
@@ -27,12 +26,6 @@ export default function Layout() {
   const [activeThreadId, setActiveThreadId] = useState<ThreadType['id']>();
   const activeThread = activeThreadId ? threads[activeThreadId] : undefined;
   const tokens = useThreadStore((state) => state.tokens);
-  const playbackSpeed = useThreadStore((state) => state.playbackSpeed);
-  const setPlaybackSpeed = useThreadStore((state) => state.setPlaybackSpeed);
-  const [tempPlaybackSpeed, setTempPlaybackSpeed] = useState(playbackSpeed);
-  useEffect(() => {
-    setTempPlaybackSpeed(playbackSpeed);
-  }, [playbackSpeed]);
 
   // Pass to the thread to trigger call during screen transition
   const [lastCreatedThreadId, setLastCreatedThreadId] =
@@ -136,7 +129,8 @@ export default function Layout() {
           width="400px"
         >
           <Stack spacing={2}>
-            <Box alignItems="center" display="flex" flexDirection="row">
+            {/* TODO: reimplement when playback speed fixed */}
+            {/* <Box alignItems="center" display="flex" flexDirection="row">
               <Typography sx={{ textWrap: 'nowrap', pr: 2 }}>
                 Playback speed
               </Typography>
@@ -155,7 +149,7 @@ export default function Layout() {
                 value={tempPlaybackSpeed}
                 valueLabelDisplay="on"
               />
-            </Box>
+            </Box> */}
             <TextField
               onChange={({ target }) => {
                 if (target.value === '') {

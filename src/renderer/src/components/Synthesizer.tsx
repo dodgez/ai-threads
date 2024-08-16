@@ -13,7 +13,6 @@ import IconButton from '@mui/material/IconButton';
 import type { AwsCredentialIdentity } from '@smithy/types';
 import { enqueueSnackbar } from 'notistack';
 import { useCallback, useState } from 'react';
-import { PitchShifter } from 'soundtouchjs';
 
 import { useThreadStore } from '../useThreadStore';
 
@@ -22,12 +21,12 @@ const { ipcRenderer } = require('electron');
 
 export default function Synthesizer({ text }: { text: string }) {
   const awsCredProfile = useThreadStore((state) => state.awsCredProfile);
-  const playbackSpeed = useThreadStore((state) => state.playbackSpeed);
   const [audioContext, setAudioContext] = useState<AudioContext>();
-  const [sourceNode, setSourceNode] = useState<AudioBufferSourceNode>();
+  const [audioSource, setAudioSource] = useState<AudioBufferSourceNode>();
   const [isPlaying, setPlaying] = useState(false);
 
   const synthesizeSpeech = useCallback(async () => {
+    if (isPlaying) return;
     const creds = (await ipcRenderer
       .invoke('creds', awsCredProfile)
       .catch((e: unknown) => {
@@ -65,8 +64,6 @@ export default function Synthesizer({ text }: { text: string }) {
       if (AudioStream instanceof ReadableStream) {
         const audioContext = new window.AudioContext();
         setAudioContext(audioContext);
-        const source = audioContext.createBufferSource();
-        setSourceNode(source);
 
         const reader = AudioStream.getReader();
         const chunks: Uint8Array[] = [];
@@ -90,23 +87,19 @@ export default function Synthesizer({ text }: { text: string }) {
         }
 
         setPlaying(true);
-        await audioContext.decodeAudioData(audioData.buffer, (buffer) => {
-          const shifter = new PitchShifter(audioContext, buffer, 16384);
-          shifter.tempo = playbackSpeed;
-
-          const source = shifter.sourceNode;
-          setSourceNode(source);
-
-          shifter.connect(audioContext.destination);
-
-          source.onended = () => {
-            setPlaying(false);
-            setSourceNode(undefined);
-            setAudioContext(undefined);
-          };
-
-          source.start(0);
-        });
+        const buffer = await audioContext.decodeAudioData(audioData.buffer);
+        const audioSource = audioContext.createBufferSource();
+        setAudioSource(audioSource);
+        audioSource.buffer = buffer;
+        audioSource.connect(audioContext.destination);
+        audioSource.start();
+        audioSource.onended = () => {
+          setAudioSource(undefined);
+          audioSource.disconnect();
+          setAudioContext(undefined);
+          void audioContext.close();
+          setPlaying(false);
+        };
       }
     } catch (e) {
       enqueueSnackbar(`Error synthesizing text: ${JSON.stringify(e)}`, {
@@ -114,20 +107,20 @@ export default function Synthesizer({ text }: { text: string }) {
         variant: 'error',
       });
     }
-  }, [awsCredProfile, playbackSpeed, text]);
+  }, [awsCredProfile, isPlaying, text]);
 
   const stopPlayback = useCallback(() => {
-    if (sourceNode) {
-      sourceNode.stop();
-      setSourceNode(undefined);
+    if (audioSource) {
+      setAudioSource(undefined);
+      audioSource.stop();
+      audioSource.disconnect();
     }
     if (audioContext) {
-      void audioContext.close().then(() => {
-        setAudioContext(undefined);
-      });
+      setAudioContext(undefined);
+      void audioContext.close();
     }
     setPlaying(false);
-  }, [audioContext, sourceNode]);
+  }, [audioContext, audioSource]);
 
   return isPlaying ? (
     <IconButton onClick={stopPlayback}>
