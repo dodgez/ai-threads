@@ -22,6 +22,8 @@ export default function Layout() {
   const hasHydrated = useThreadStore((state) => state._hasHydrated);
   const awsCredProfile = useThreadStore((state) => state.awsCredProfile);
   const setAwsCredProfile = useThreadStore((state) => state.setAwsCredProfile);
+  const openAIKey = useThreadStore((state) => state.openAIKey);
+  const setOpenAIKey = useThreadStore((state) => state.setOpenAIKey);
   const threads = useThreadStore((state) => state.threads);
   const [activeThreadId, setActiveThreadId] = useState<ThreadType['id']>();
   const activeThread = activeThreadId ? threads[activeThreadId] : undefined;
@@ -151,6 +153,7 @@ export default function Layout() {
               />
             </Box> */}
             <TextField
+              label="AWS credentials profile"
               onChange={({ target }) => {
                 if (target.value === '') {
                   setAwsCredProfile(undefined);
@@ -158,8 +161,18 @@ export default function Layout() {
                   setAwsCredProfile(target.value);
                 }
               }}
-              placeholder="AWS credentials profile"
-              value={awsCredProfile ?? ''}
+              value={awsCredProfile ?? 'default'}
+            />
+            <TextField
+              label="OpenAI API key"
+              onChange={({ target }) => {
+                if (target.value === '') {
+                  setOpenAIKey(undefined);
+                } else {
+                  setOpenAIKey(target.value);
+                }
+              }}
+              value={openAIKey}
             />
             <Button
               onClick={() => {

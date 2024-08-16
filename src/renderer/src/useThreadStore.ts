@@ -31,6 +31,8 @@ interface StoreState {
   setPlaybackSpeed: (playbackSpeed: number) => void;
   awsCredProfile?: string;
   setAwsCredProfile: (state?: string) => void;
+  openAIKey?: string;
+  setOpenAIKey: (key?: string) => void;
   threads: Record<ThreadType['id'], ThreadType | undefined>;
   createThread: (message: MessageType, model: string) => ThreadType['id'];
   renameThread: (id: ThreadType['id'], name: string) => void;
@@ -56,6 +58,10 @@ export const useThreadStore = create<StoreState>()(
       awsCredProfile: undefined,
       setAwsCredProfile: (state?: string) => {
         set({ awsCredProfile: state });
+      },
+      openAIKey: undefined,
+      setOpenAIKey: (key?: string) => {
+        set({ openAIKey: key });
       },
       threads: {},
       createThread: (message: MessageType, model: string) => {
@@ -98,7 +104,7 @@ export const useThreadStore = create<StoreState>()(
             region: 'us-west-2',
           });
           const command = new ConverseCommand({
-            modelId: model,
+            modelId: 'anthropic.claude-3-haiku-20240307-v1:0',
             messages,
           });
 
@@ -193,9 +199,13 @@ export const useThreadStore = create<StoreState>()(
       partialize: (state) =>
         Object.fromEntries(
           Object.entries(state).filter(([key]) =>
-            ['awsCredProfile', 'playbackSpeed', 'threads', 'tokens'].includes(
-              key,
-            ),
+            [
+              'awsCredProfile',
+              'openAIKey',
+              'playbackSpeed',
+              'threads',
+              'tokens',
+            ].includes(key),
           ),
         ),
       storage: createJSONStorage(() => storage),

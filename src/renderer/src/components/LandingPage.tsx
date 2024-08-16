@@ -97,6 +97,8 @@ export default function LandingPage({
               <MenuItem value="anthropic.claude-3-5-sonnet-20240620-v1:0">
                 Anthropic Claude 3.5 Sonnet (no document support)
               </MenuItem>
+              <MenuItem value="gpt-4o">OpenAI GPT-4o</MenuItem>
+              <MenuItem value="gpt-4o-mini">OpenAI GPT-4o mini</MenuItem>
             </Select>
           </FormControl>
         </Container>

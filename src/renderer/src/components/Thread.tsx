@@ -1,10 +1,11 @@
 import { createAmazonBedrock } from '@ai-sdk/amazon-bedrock';
+import { createOpenAI } from '@ai-sdk/openai';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
 import Stack from '@mui/material/Stack';
 import type { AwsCredentialIdentity } from '@smithy/types';
-import type { CoreMessage } from 'ai';
+import type { CoreMessage, LanguageModel } from 'ai';
 import { streamText } from 'ai';
 import { enqueueSnackbar } from 'notistack';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -44,6 +45,7 @@ export default function Thread({
   const addMessage = useThreadStore((state) => state.addMessage);
   const addTokens = useThreadStore((state) => state.addTokens);
   const awsCredProfile = useThreadStore((state) => state.awsCredProfile);
+  const openAIKey = useThreadStore((state) => state.openAIKey);
   const [streamingResponse, setStreamingResponse] = useState<string>();
 
   // Used for scrolling messages into view
@@ -109,12 +111,32 @@ export default function Thread({
         return;
       }
 
-      const bedrock = createAmazonBedrock({
-        bedrockOptions: {
-          credentials: creds,
-          region: 'us-west-2',
-        },
-      });
+      let model: LanguageModel;
+      if (thread.model?.startsWith('anthropic')) {
+        const bedrock = createAmazonBedrock({
+          bedrockOptions: {
+            credentials: creds,
+            region: 'us-west-2',
+          },
+        });
+        model = bedrock(
+          thread.model ?? 'anthropic.claude-3-haiku-20240307-v1:0',
+        );
+      } else {
+        if (!openAIKey) {
+          enqueueSnackbar('No OpenAI API key provided for request.', {
+            autoHideDuration: 3000,
+            variant: 'error',
+          });
+          cleanup();
+          return;
+        }
+        const openAI = createOpenAI({
+          apiKey: openAIKey,
+          compatibility: 'strict',
+        });
+        model = openAI(thread.model ?? 'gpt-4o-mini');
+      }
 
       const { textStream } = await streamText({
         onFinish: (evt) => {
@@ -127,9 +149,7 @@ export default function Thread({
           cleanup();
           setTimeout(jumpBottomListener, 0);
         },
-        model: bedrock(
-          thread.model ?? 'anthropic.claude-3-haiku-20240307-v1:0',
-        ),
+        model,
         messages,
       }).catch((e: unknown) => {
         enqueueSnackbar(`Error sending messages: ${JSON.stringify(e)}`, {
@@ -162,6 +182,7 @@ export default function Thread({
       addTokens,
       awsCredProfile,
       jumpBottomListener,
+      openAIKey,
       thread.id,
       thread.model,
     ],
