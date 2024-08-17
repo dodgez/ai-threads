@@ -4,6 +4,7 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
 import Stack from '@mui/material/Stack';
+import Typography from '@mui/material/Typography';
 import type { AwsCredentialIdentity } from '@smithy/types';
 import type { CoreMessage, LanguageModel } from 'ai';
 import { streamText } from 'ai';
@@ -20,6 +21,7 @@ import type {
   TextPart,
   ThreadType,
 } from '../types';
+import { ModelMetadata, Provider } from '../types';
 import { useThreadStore } from '../useThreadStore';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -112,30 +114,33 @@ export default function Thread({
       }
 
       let model: LanguageModel;
-      if (thread.model?.startsWith('anthropic')) {
-        const bedrock = createAmazonBedrock({
-          bedrockOptions: {
-            credentials: creds,
-            region: 'us-west-2',
-          },
-        });
-        model = bedrock(
-          thread.model ?? 'anthropic.claude-3-haiku-20240307-v1:0',
-        );
-      } else {
-        if (!openAIKey) {
-          enqueueSnackbar('No OpenAI API key provided for request.', {
-            autoHideDuration: 3000,
-            variant: 'error',
+      switch (ModelMetadata[thread.model].provider) {
+        case Provider.AmazonBedrock: {
+          const bedrock = createAmazonBedrock({
+            bedrockOptions: {
+              credentials: creds,
+              region: 'us-west-2',
+            },
           });
-          cleanup();
-          return;
+          model = bedrock(thread.model);
+          break;
         }
-        const openAI = createOpenAI({
-          apiKey: openAIKey,
-          compatibility: 'strict',
-        });
-        model = openAI(thread.model ?? 'gpt-4o-mini');
+        case Provider.OpenAI: {
+          if (!openAIKey) {
+            enqueueSnackbar('No OpenAI API key provided for request.', {
+              autoHideDuration: 3000,
+              variant: 'error',
+            });
+            cleanup();
+            return;
+          }
+          const openAI = createOpenAI({
+            apiKey: openAIKey,
+            compatibility: 'strict',
+          });
+          model = openAI(thread.model);
+          break;
+        }
       }
 
       const { textStream } = await streamText({
@@ -239,6 +244,9 @@ export default function Thread({
     >
       <Container maxWidth="lg" sx={{ flexGrow: 1, p: 2 }}>
         <Stack spacing={2}>
+          <Typography color="grey" variant="h6">
+            {ModelMetadata[thread.model].label}
+          </Typography>
           {thread.messages.map((message) => (
             <Message key={message.id} message={message} thread={thread} />
           ))}
@@ -279,6 +287,7 @@ export default function Thread({
           )
         }
         loading={loading}
+        modelId={thread.model}
         onCancel={onCancel}
         onSubmit={onSubmit}
         overrideCanSubmit={

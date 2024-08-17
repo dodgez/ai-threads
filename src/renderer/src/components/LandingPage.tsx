@@ -13,6 +13,7 @@ import { v4 as uuid } from 'uuid';
 import Input from './Input';
 import Suggestion from './Suggestion';
 import type { FilePart, ImagePart, ThreadType } from '../types';
+import { ModelId, ModelMetadata } from '../types';
 import { useThreadStore } from '../useThreadStore';
 
 export default function LandingPage({
@@ -21,7 +22,7 @@ export default function LandingPage({
   onCreate: (id: ThreadType['id']) => void;
 }) {
   const createThread = useThreadStore((state) => state.createThread);
-  const [model, setModel] = useState('anthropic.claude-3-haiku-20240307-v1:0');
+  const [model, setModel] = useState<ModelId>(ModelId.Claude3Haiku);
 
   const onSubmit = useCallback(
     (message: string, docs: FilePart[], images: ImagePart[]) => {
@@ -84,26 +85,22 @@ export default function LandingPage({
               label="Bedrock model"
               labelId="bedrock-model-label"
               onChange={({ target }) => {
-                setModel(target.value);
+                setModel(target.value as ModelId);
               }}
               value={model}
             >
-              <MenuItem value="anthropic.claude-3-sonnet-20240229-v1:0">
-                Anthropic Claude 3 Sonnet
-              </MenuItem>
-              <MenuItem value="anthropic.claude-3-haiku-20240307-v1:0">
-                Anthropic Claude 3 Haiku
-              </MenuItem>
-              <MenuItem value="anthropic.claude-3-5-sonnet-20240620-v1:0">
-                Anthropic Claude 3.5 Sonnet (no document support)
-              </MenuItem>
-              <MenuItem value="gpt-4o">OpenAI GPT-4o</MenuItem>
-              <MenuItem value="gpt-4o-mini">OpenAI GPT-4o mini</MenuItem>
+              {Object.entries(ModelMetadata).map(
+                ([modelId, { label: modelLabel }]) => (
+                  <MenuItem key={modelId} value={modelId}>
+                    {modelLabel}
+                  </MenuItem>
+                ),
+              )}
             </Select>
           </FormControl>
         </Container>
       </Box>
-      <Input onSubmit={onSubmit} />
+      <Input modelId={model} onSubmit={onSubmit} />
     </Box>
   );
 }

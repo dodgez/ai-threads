@@ -17,10 +17,51 @@ interface UserMessage {
 export type MessageType = (CoreAssistantMessage | UserMessage) & {
   id: string;
 };
+export enum ModelId {
+  Claude3Sonnet = 'anthropic.claude-3-sonnet-20240229-v1:0',
+  Claude3Haiku = 'anthropic.claude-3-haiku-20240307-v1:0',
+  Claude35Sonnet = 'anthropic.claude-3-5-sonnet-20240620-v1:0',
+  GPT4o = 'gpt-4o',
+  GPT4oMini = 'gpt-4o-mini',
+}
+export enum Provider {
+  AmazonBedrock,
+  OpenAI,
+}
+export const ModelMetadata: Record<
+  ModelId,
+  { label: string; provider: Provider; supportsDocs: boolean }
+> = {
+  [ModelId.Claude3Sonnet]: {
+    label: 'Anthropic Claude 3 Sonnet',
+    provider: Provider.AmazonBedrock,
+    supportsDocs: true,
+  },
+  [ModelId.Claude3Haiku]: {
+    label: 'Anthropic Claude 3 Haiku',
+    provider: Provider.AmazonBedrock,
+    supportsDocs: true,
+  },
+  [ModelId.Claude35Sonnet]: {
+    label: 'Anthropic Claude 3.5 Sonnet',
+    provider: Provider.AmazonBedrock,
+    supportsDocs: false,
+  },
+  [ModelId.GPT4o]: {
+    label: 'OpenAI GPT-4o',
+    provider: Provider.OpenAI,
+    supportsDocs: false,
+  },
+  [ModelId.GPT4oMini]: {
+    label: 'OpenAI GPT-4o mini',
+    provider: Provider.OpenAI,
+    supportsDocs: false,
+  },
+};
 export interface ThreadType {
   id: string;
   messages: MessageType[];
-  model?: string;
+  model: ModelId;
   name: string;
 }
 

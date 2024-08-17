@@ -12,6 +12,7 @@ import type { StateStorage } from 'zustand/middleware';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import type { MessageType, ThreadType } from './types';
+import { ModelId } from './types';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { ipcRenderer } = require('electron');
@@ -34,10 +35,10 @@ interface StoreState {
   openAIKey?: string;
   setOpenAIKey: (key?: string) => void;
   threads: Record<ThreadType['id'], ThreadType | undefined>;
-  createThread: (message: MessageType, model: string) => ThreadType['id'];
+  createThread: (message: MessageType, model: ModelId) => ThreadType['id'];
   renameThread: (id: ThreadType['id'], name: string) => void;
   deleteThread: (id: ThreadType['id']) => void;
-  setThreadModel: (id: ThreadType['id'], model: string) => void;
+  setThreadModel: (id: ThreadType['id'], model: ModelId) => void;
   addMessage: (id: ThreadType['id'], message: MessageType) => void;
   removeMessage: (id: ThreadType['id'], messageId: MessageType['id']) => void;
   tokens: { input: number; output: number };
@@ -64,7 +65,7 @@ export const useThreadStore = create<StoreState>()(
         set({ openAIKey: key });
       },
       threads: {},
-      createThread: (message: MessageType, model: string) => {
+      createThread: (message: MessageType, model: ModelId) => {
         const id = uuid();
         set(({ threads }) => {
           const newThreads = { ...threads };
@@ -104,7 +105,7 @@ export const useThreadStore = create<StoreState>()(
             region: 'us-west-2',
           });
           const command = new ConverseCommand({
-            modelId: 'anthropic.claude-3-haiku-20240307-v1:0',
+            modelId: ModelId.Claude3Haiku,
             messages,
           });
 
@@ -140,7 +141,7 @@ export const useThreadStore = create<StoreState>()(
           return { threads: newThreads };
         });
       },
-      setThreadModel: (id: ThreadType['id'], model: string) => {
+      setThreadModel: (id: ThreadType['id'], model: ModelId) => {
         set(({ threads }) => {
           const newThreads = { ...threads };
           if (!newThreads[id]) return { threads };

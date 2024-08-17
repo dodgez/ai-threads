@@ -10,17 +10,22 @@ import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import { enqueueSnackbar } from 'notistack';
 import type { ReactNode, RefObject } from 'react';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { v4 as uuid } from 'uuid';
 
 import Transcriber from './Transcriber';
-import type { FilePart, ImagePart } from '../types';
-import { DocMimeTypeMapping, ImageMimeTypeMapping } from '../types';
+import type { FilePart, ImagePart, ModelId } from '../types';
+import {
+  DocMimeTypeMapping,
+  ImageMimeTypeMapping,
+  ModelMetadata,
+} from '../types';
 
 export default function Input({
   inputRef,
   jumpButton = null,
   loading = false,
+  modelId,
   onCancel,
   onSubmit,
   overrideCanSubmit = false,
@@ -28,6 +33,7 @@ export default function Input({
   inputRef?: RefObject<HTMLInputElement>;
   jumpButton?: ReactNode;
   loading?: boolean;
+  modelId: ModelId;
   onCancel?: () => void;
   onSubmit: (message: string, docs: FilePart[], images: ImagePart[]) => void;
   overrideCanSubmit?: boolean;
@@ -107,6 +113,26 @@ export default function Input({
     setMessage((message) => message + transcript);
   }, []);
 
+  const supportedFileTypes = useMemo(() => {
+    const fileTypes = ['.jpg', '.png'];
+    if (ModelMetadata[modelId].supportsDocs) {
+      fileTypes.push(
+        ...[
+          '.csv',
+          '.doc',
+          '.docx',
+          '.html',
+          '.md',
+          '.pdf',
+          '.txt',
+          '.xls',
+          '.xlsx',
+        ],
+      );
+    }
+    return fileTypes;
+  }, [modelId]);
+
   return (
     <Box alignItems="end" bottom={0} position="sticky">
       <Box display="flex" justifyContent="center">
@@ -156,7 +182,7 @@ export default function Input({
             value={message}
           />
           <input
-            accept=".csv,.doc,.docx,.jpg,.html,.md,.pdf,.png,.txt,.xls,.xlsx"
+            accept={supportedFileTypes.join(',')}
             multiple
             onChange={(data) => {
               if (!data.target.files) {
