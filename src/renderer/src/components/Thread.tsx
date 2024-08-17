@@ -24,8 +24,7 @@ import type {
 import { ModelMetadata, Provider } from '../types';
 import { useThreadStore } from '../useThreadStore';
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { ipcRenderer } = require('electron');
+const { ipcRenderer } = window.require('electron');
 
 function isScrolledBottom() {
   const scrollPosition = window.scrollY;

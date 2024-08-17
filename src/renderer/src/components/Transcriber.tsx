@@ -12,8 +12,7 @@ import { useCallback, useRef, useState } from 'react';
 
 import { useThreadStore } from '../useThreadStore';
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { ipcRenderer } = require('electron');
+const { ipcRenderer } = window.require('electron');
 
 export default function Transcriber({
   onVoiceData,

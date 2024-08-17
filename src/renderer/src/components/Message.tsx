@@ -21,8 +21,7 @@ import Synthesizer from './Synthesizer';
 import type { MessageType, ThreadType } from '../types';
 import { useThreadStore } from '../useThreadStore';
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { shell } = require('electron');
+const { shell } = window.require('electron');
 
 function Content({
   contentBlock,

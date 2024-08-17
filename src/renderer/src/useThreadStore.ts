@@ -14,8 +14,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import type { MessageType, ThreadType } from './types';
 import { ModelId } from './types';
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { ipcRenderer } = require('electron');
+const { ipcRenderer } = window.require('electron');
 
 const storage: StateStorage = {
   getItem: async (name: string): Promise<string | null> =>

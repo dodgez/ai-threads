@@ -16,8 +16,7 @@ import { useCallback, useState } from 'react';
 
 import { useThreadStore } from '../useThreadStore';
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { ipcRenderer } = require('electron');
+const { ipcRenderer } = window.require('electron');
 
 export default function Synthesizer({ text }: { text: string }) {
   const awsCredProfile = useThreadStore((state) => state.awsCredProfile);
