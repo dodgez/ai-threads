@@ -80,10 +80,10 @@ export default function LandingPage({
         </Box>
         <Container maxWidth="sm" sx={{ pt: 2 }}>
           <FormControl fullWidth>
-            <InputLabel id="bedrock-model-label">Bedrock model</InputLabel>
+            <InputLabel id="llm-model-label">LLM model</InputLabel>
             <Select
-              label="Bedrock model"
-              labelId="bedrock-model-label"
+              label="LLM model"
+              labelId="llm-model-label"
               onChange={({ target }) => {
                 setModel(target.value as ModelId);
               }}
