@@ -7,10 +7,12 @@ import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import Paper from '@mui/material/Paper';
 import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useState } from 'react';
 
 import type { ThreadType } from '../types';
+import { ModelMetadata } from '../types';
 import { useThreadStore } from '../useThreadStore';
 
 export default function ThreadButton({
@@ -43,6 +45,7 @@ export default function ThreadButton({
       <Button
         onClick={onClick}
         sx={{
+          alignItems: 'flex-start',
           backgroundColor: (theme) =>
             thread.id === activeThread?.id
               ? prefersDarkMode
@@ -50,12 +53,24 @@ export default function ThreadButton({
                 : theme.palette.grey[100]
               : undefined,
           color: (theme) => theme.palette.text.primary,
+          display: 'flex',
+          flexDirection: 'column',
           flexGrow: 1,
+          textAlign: 'left',
           textTransform: 'none',
           width: '100%',
         }}
       >
-        {thread.name}
+        <Typography variant="body1">{thread.name}</Typography>
+        <Typography
+          variant="body2"
+          sx={{
+            color: (theme) => theme.palette.text.secondary,
+            fontSize: '0.875rem',
+          }}
+        >
+          {ModelMetadata[thread.model].label}
+        </Typography>
       </Button>
       <Paper
         sx={{
