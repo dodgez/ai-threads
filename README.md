@@ -1,3 +1,3 @@
-# Bedrock Threads
+# AI Threads
 
-A better playground for Amazon Bedrock.
+A playground for various LLMs.

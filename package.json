@@ -1,7 +1,7 @@
 {
-  "name": "bedrock-threads",
-  "productName": "Bedrock Threads",
-  "description": "A better playground for Amazon Bedrock.",
+  "name": "ai-threads",
+  "productName": "AI Threads",
+  "description": "A playground for various LLMs.",
   "author": "Zachary Dodge",
   "private": true,
   "version": "0.0.0",

@@ -192,7 +192,7 @@ export const useThreadStore = create<StoreState>()(
       },
     }),
     {
-      name: 'bedrock-threads',
+      name: 'ai-threads',
       onRehydrateStorage: () => (state?: StoreState) => {
         state?.setHasHydrated(true);
       },
