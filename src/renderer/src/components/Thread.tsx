@@ -149,7 +149,11 @@ export default function Thread({
             content: [{ type: 'text', text: evt.text }],
             id: uuid(),
           });
-          addTokens(evt.usage.promptTokens, evt.usage.completionTokens);
+          addTokens(
+            thread.model,
+            evt.usage.promptTokens,
+            evt.usage.completionTokens,
+          );
           cleanup();
           setTimeout(jumpBottomListener, 0);
         },

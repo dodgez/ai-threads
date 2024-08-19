@@ -10,12 +10,13 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import { SnackbarProvider } from 'notistack';
 import numeral from 'numeral';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import LandingPage from './LandingPage';
 import Thread from './Thread';
 import ThreadButton from './ThreadButton';
-import type { ThreadType } from '../types';
+import type { ModelId, ThreadType } from '../types';
+import { ModelMetadata } from '../types';
 import { useThreadStore } from '../useThreadStore';
 
 export default function Layout() {
@@ -39,6 +40,27 @@ export default function Layout() {
   }, []);
 
   const [modalOpen, setModalOpen] = useState(false);
+
+  const usage = useMemo(
+    () =>
+      Object.keys(tokens).reduce(
+        ({ cost, inputTokens, outputTokens }, key: string) => {
+          const modelId = key as ModelId;
+          return {
+            cost:
+              cost +
+              (ModelMetadata[modelId].pricing.input * tokens[modelId].input) /
+                1_000_000 +
+              (ModelMetadata[modelId].pricing.output * tokens[modelId].output) /
+                1_000_000,
+            inputTokens: inputTokens + tokens[modelId].input,
+            outputTokens: outputTokens + tokens[modelId].output,
+          };
+        },
+        { cost: 0, inputTokens: 0, outputTokens: 0 },
+      ),
+    [tokens],
+  );
 
   if (!hasHydrated) {
     return (
@@ -105,11 +127,9 @@ export default function Layout() {
         </Stack>
         <Box color="gray" mb={0.5} mx="auto">
           <Typography variant="caption">
-            {numeral(tokens.input).format('0.00a')}/
-            {numeral(tokens.output).format('0.00a')} tokens (in/out) ~$
-            {numeral(
-              (tokens.input / 1000) * 0.003 + (tokens.output / 1000) * 0.015,
-            ).format('0.00a')}
+            {numeral(usage.inputTokens).format('0a')}/
+            {numeral(usage.outputTokens).format('0a')} tokens (in/out) ~$
+            {numeral(usage.cost).format('0.00a')}
           </Typography>
         </Box>
       </Drawer>

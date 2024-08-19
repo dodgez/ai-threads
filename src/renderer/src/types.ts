@@ -28,32 +28,58 @@ export enum Provider {
   AmazonBedrock,
   OpenAI,
 }
-export const ModelMetadata: Record<
-  ModelId,
-  { label: string; provider: Provider; supportsDocs: boolean }
-> = {
+interface ModelMetadataInfo {
+  label: string;
+  /**
+   * Dollars per 1 million tokens
+   */
+  pricing: { input: number; output: number };
+  provider: Provider;
+  supportsDocs: boolean;
+}
+export const ModelMetadata: Record<ModelId, ModelMetadataInfo> = {
   [ModelId.Claude3Sonnet]: {
     label: 'Anthropic Claude 3 Sonnet',
+    pricing: {
+      input: 3,
+      output: 15,
+    },
     provider: Provider.AmazonBedrock,
     supportsDocs: true,
   },
   [ModelId.Claude3Haiku]: {
     label: 'Anthropic Claude 3 Haiku',
+    pricing: {
+      input: 0.25,
+      output: 1.25,
+    },
     provider: Provider.AmazonBedrock,
     supportsDocs: true,
   },
   [ModelId.Claude35Sonnet]: {
     label: 'Anthropic Claude 3.5 Sonnet',
+    pricing: {
+      input: 3,
+      output: 15,
+    },
     provider: Provider.AmazonBedrock,
     supportsDocs: false,
   },
   [ModelId.GPT4o]: {
     label: 'OpenAI GPT-4o',
+    pricing: {
+      input: 5,
+      output: 15,
+    },
     provider: Provider.OpenAI,
     supportsDocs: false,
   },
   [ModelId.GPT4oMini]: {
     label: 'OpenAI GPT-4o mini',
+    pricing: {
+      input: 0.15,
+      output: 0.6,
+    },
     provider: Provider.OpenAI,
     supportsDocs: false,
   },

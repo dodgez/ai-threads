@@ -40,8 +40,8 @@ interface StoreState {
   setThreadModel: (id: ThreadType['id'], model: ModelId) => void;
   addMessage: (id: ThreadType['id'], message: MessageType) => void;
   removeMessage: (id: ThreadType['id'], messageId: MessageType['id']) => void;
-  tokens: { input: number; output: number };
-  addTokens: (input: number, output: number) => void;
+  tokens: Record<ModelId, { input: number; output: number }>;
+  addTokens: (model: ModelId, input: number, output: number) => void;
 }
 
 export const useThreadStore = create<StoreState>()(
@@ -181,14 +181,37 @@ export const useThreadStore = create<StoreState>()(
           return { threads: newThreads };
         });
       },
-      tokens: { input: 0, output: 0 },
-      addTokens: (input: number, output: number) => {
-        set(({ tokens }) => ({
-          tokens: {
-            input: tokens.input + input,
-            output: tokens.output + output,
-          },
-        }));
+      tokens: {
+        [ModelId.Claude3Sonnet]: {
+          input: 0,
+          output: 0,
+        },
+        [ModelId.Claude3Haiku]: {
+          input: 0,
+          output: 0,
+        },
+        [ModelId.Claude35Sonnet]: {
+          input: 0,
+          output: 0,
+        },
+        [ModelId.GPT4o]: {
+          input: 0,
+          output: 0,
+        },
+        [ModelId.GPT4oMini]: {
+          input: 0,
+          output: 0,
+        },
+      },
+      addTokens: (model: ModelId, input: number, output: number) => {
+        set(({ tokens }) => {
+          const newTokens = structuredClone(tokens);
+
+          newTokens[model].input += input;
+          newTokens[model].output += output;
+
+          return { tokens: newTokens };
+        });
       },
     }),
     {
