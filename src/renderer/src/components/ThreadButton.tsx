@@ -53,51 +53,53 @@ export default function ThreadButton({
                 : theme.palette.grey[100]
               : undefined,
           color: (theme) => theme.palette.text.primary,
-          display: 'flex',
-          flexDirection: 'column',
           flexGrow: 1,
           textAlign: 'left',
           textTransform: 'none',
           width: '100%',
         }}
       >
-        <Typography variant="body1">{thread.name}</Typography>
-        <Typography
-          variant="body2"
-          sx={{
-            color: (theme) => theme.palette.text.secondary,
-            fontSize: '0.875rem',
-          }}
-        >
-          {`${ModelMetadata[thread.model].label} - ${numeral(thread.tokens).format('0.[00]a')} tokens`}
-        </Typography>
+        <Box display="flex" flexDirection="row" flexGrow={1}>
+          <Box display="flex" flexDirection="column" flexGrow={1}>
+            <Typography variant="body1">{thread.name}</Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                color: (theme) => theme.palette.text.secondary,
+                fontSize: '0.875rem',
+              }}
+            >
+              {`${ModelMetadata[thread.model].label} - ${numeral(thread.tokens).format('0.[00]a')} tokens`}
+            </Typography>
+          </Box>
+          <Paper
+            sx={{
+              backgroundColor: (theme) => theme.palette.background.default,
+              display: 'inline-flex',
+              flexDirection: 'column',
+              visibility: hovered ? 'visible' : 'hidden',
+            }}
+          >
+            <IconButton
+              onClick={() => {
+                setEditing(true);
+                setNewName(thread.name);
+              }}
+              size="small"
+            >
+              <Edit />
+            </IconButton>
+            <IconButton
+              onClick={() => {
+                deleteThread(thread.id);
+              }}
+              size="small"
+            >
+              <Delete />
+            </IconButton>
+          </Paper>
+        </Box>
       </Button>
-      <Paper
-        sx={{
-          backgroundColor: (theme) => theme.palette.background.default,
-          display: 'inline-flex',
-          flexDirection: 'column',
-          visibility: hovered ? 'visible' : 'hidden',
-        }}
-      >
-        <IconButton
-          onClick={() => {
-            setEditing(true);
-            setNewName(thread.name);
-          }}
-          size="small"
-        >
-          <Edit />
-        </IconButton>
-        <IconButton
-          onClick={() => {
-            deleteThread(thread.id);
-          }}
-          size="small"
-        >
-          <Delete />
-        </IconButton>
-      </Paper>
     </Box>
   ) : (
     <Box alignItems="center" display="flex">

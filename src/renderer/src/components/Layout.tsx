@@ -2,6 +2,7 @@ import Settings from '@mui/icons-material/Settings';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
+import Divider from '@mui/material/Divider';
 import Drawer from '@mui/material/Drawer';
 import IconButton from '@mui/material/IconButton';
 import Modal from '@mui/material/Modal';
@@ -89,7 +90,7 @@ export default function Layout() {
         }}
         variant="permanent"
       >
-        <Box display="flex" ml={2} mr={2} mt={2}>
+        <Box display="flex" m={2}>
           <Button
             disabled={!activeThread}
             onClick={() => {
@@ -108,6 +109,7 @@ export default function Layout() {
             <Settings />
           </IconButton>
         </Box>
+        <Divider />
         <Stack sx={{ flexGrow: 1, overflow: 'auto' }}>
           {Object.entries(threads).map(([_, thread]) => {
             if (!thread) {
