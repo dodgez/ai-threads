@@ -2,7 +2,7 @@
 
 A playground for various LLMs.
 
-![Screenshot of AI Threads' interface](https://github.com/user-attachments/assets/4f76bb3d-6d3c-4f47-b931-e09dcd830c60)
+![Screenshot of AI Threads' interface](https://github.com/user-attachments/assets/035f1690-5828-4cb7-b936-b3532b9706d2)
 
 ## Features
 

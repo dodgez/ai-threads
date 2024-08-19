@@ -5,6 +5,7 @@ import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
 import Container from '@mui/material/Container';
+import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
@@ -139,11 +140,15 @@ export default function Input({
         {jumpButton}
       </Box>
       <Box
-        pb={2}
-        px={2}
         sx={{ backgroundColor: (theme) => theme.palette.background.default }}
       >
-        <Box alignItems="center" display="flex">
+        <Divider />
+        <Box
+          alignItems="center"
+          display="flex"
+          pb={docs.length || images.length ? 1 : 2}
+          pt={2}
+        >
           <Transcriber onVoiceData={onVoiceData} />
           <TextField
             autoFocus
@@ -231,7 +236,7 @@ export default function Input({
           sx={{
             backgroundColor: (theme) => theme.palette.background.default,
             overflowX: 'auto',
-            pt: 1,
+            pb: docs.length || images.length ? 1 : 0,
           }}
         >
           <Stack direction="row" spacing={1}>
