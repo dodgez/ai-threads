@@ -1,17 +1,21 @@
+import HelpOutline from '@mui/icons-material/HelpOutline';
 import Settings from '@mui/icons-material/Settings';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
 import Divider from '@mui/material/Divider';
 import Drawer from '@mui/material/Drawer';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import IconButton from '@mui/material/IconButton';
 import Modal from '@mui/material/Modal';
 import Stack from '@mui/material/Stack';
+import Switch from '@mui/material/Switch';
 import TextField from '@mui/material/TextField';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import { SnackbarProvider } from 'notistack';
 import numeral from 'numeral';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import LandingPage from './LandingPage';
 import Thread from './Thread';
@@ -62,6 +66,11 @@ export default function Layout() {
       ),
     [tokens],
   );
+
+  const [isChecked, setChecked] = useState(!openAIKey);
+  useEffect(() => {
+    setChecked(!openAIKey);
+  }, [openAIKey]);
 
   if (!hasHydrated) {
     return (
@@ -174,6 +183,9 @@ export default function Layout() {
                 valueLabelDisplay="on"
               />
             </Box> */}
+            <Typography textAlign="center" variant="h6">
+              AWS configuration
+            </Typography>
             <TextField
               label="AWS credentials profile"
               onChange={({ target }) => {
@@ -185,17 +197,51 @@ export default function Layout() {
               }}
               value={awsCredProfile ?? 'default'}
             />
-            <TextField
-              label="OpenAI API key"
-              onChange={({ target }) => {
-                if (target.value === '') {
-                  setOpenAIKey(undefined);
-                } else {
-                  setOpenAIKey(target.value);
+            <Divider />
+            <Typography textAlign="center" variant="h6">
+              OpenAI configuration
+            </Typography>
+            <Box display="flex">
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={isChecked}
+                    onChange={({ target }) => {
+                      setOpenAIKey(undefined);
+                      setChecked(target.checked);
+                    }}
+                  />
                 }
-              }}
-              value={openAIKey}
-            />
+                label="Use AWS Secrets Manager"
+                labelPlacement="start"
+                sx={{ flexGrow: 1 }}
+              />
+              <Tooltip
+                title={
+                  <Typography>
+                    Use secret name `ai-threads/api-keys` with `openai`
+                    key/value pair.
+                  </Typography>
+                }
+              >
+                <IconButton>
+                  <HelpOutline />
+                </IconButton>
+              </Tooltip>
+            </Box>
+            {!isChecked && (
+              <TextField
+                label="OpenAI API key"
+                onChange={({ target }) => {
+                  if (target.value === '') {
+                    setOpenAIKey(undefined);
+                  } else {
+                    setOpenAIKey(target.value);
+                  }
+                }}
+                value={openAIKey}
+              />
+            )}
             <Button
               onClick={() => {
                 setModalOpen(false);

@@ -1,5 +1,9 @@
 import { createAmazonBedrock } from '@ai-sdk/amazon-bedrock';
 import { createOpenAI } from '@ai-sdk/openai';
+import {
+  GetSecretValueCommand,
+  SecretsManagerClient,
+} from '@aws-sdk/client-secrets-manager';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
@@ -34,6 +38,29 @@ function isScrolledBottom() {
 
   const scrollThreshold = 110;
   return documentHeight - (scrollPosition + windowHeight) <= scrollThreshold;
+}
+
+async function getSecretKey(
+  name: string,
+  creds: AwsCredentialIdentity,
+  defaultKey?: string,
+): Promise<string | undefined> {
+  if (defaultKey) return defaultKey;
+
+  const client = new SecretsManagerClient({
+    credentials: creds,
+    region: 'us-west-2',
+  });
+  const command = new GetSecretValueCommand({
+    SecretId: 'ai-threads/api-keys',
+  });
+  const apiKeyResponse = await client.send(command);
+  const secrets: Record<string, string | undefined> =
+    apiKeyResponse.SecretString
+      ? (JSON.parse(apiKeyResponse.SecretString) as Record<string, string>)
+      : {};
+
+  return secrets[name];
 }
 
 export default function Thread({
@@ -125,8 +152,21 @@ export default function Thread({
           break;
         }
         case Provider.OpenAI: {
-          if (!openAIKey) {
-            enqueueSnackbar('No OpenAI API key provided for request.', {
+          const apiKey = await getSecretKey('openai', creds, openAIKey).catch(
+            () => {
+              enqueueSnackbar(
+                'An unexpected error occurred while retrieving OpenAI API key from AWS Secrets Manager.',
+                {
+                  autoHideDuration: 3000,
+                  variant: 'error',
+                },
+              );
+              cleanup();
+              return;
+            },
+          );
+          if (!apiKey) {
+            enqueueSnackbar('No OpenAI API key provided or found.', {
               autoHideDuration: 3000,
               variant: 'error',
             });
@@ -134,7 +174,7 @@ export default function Thread({
             return;
           }
           const openAI = createOpenAI({
-            apiKey: openAIKey,
+            apiKey: apiKey,
             compatibility: 'strict',
           });
           model = openAI(thread.model);
