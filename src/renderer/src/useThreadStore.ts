@@ -38,7 +38,11 @@ interface StoreState {
   renameThread: (id: ThreadType['id'], name: string) => void;
   deleteThread: (id: ThreadType['id']) => void;
   setThreadModel: (id: ThreadType['id'], model: ModelId) => void;
-  addMessage: (id: ThreadType['id'], message: MessageType) => void;
+  addMessage: (
+    id: ThreadType['id'],
+    message: MessageType,
+    tokens?: number,
+  ) => void;
   removeMessage: (id: ThreadType['id'], messageId: MessageType['id']) => void;
   tokens: Record<ModelId, { input: number; output: number }>;
   addTokens: (model: ModelId, input: number, output: number) => void;
@@ -73,6 +77,7 @@ export const useThreadStore = create<StoreState>()(
             messages: [message],
             model,
             name: 'New chat',
+            tokens: 0,
           };
           return { threads: newThreads };
         });
@@ -149,7 +154,11 @@ export const useThreadStore = create<StoreState>()(
           return { threads: newThreads };
         });
       },
-      addMessage: (id: ThreadType['id'], message: MessageType) => {
+      addMessage: (
+        id: ThreadType['id'],
+        message: MessageType,
+        tokens?: number,
+      ) => {
         set(({ threads }) => {
           const newThreads = { ...threads };
           const thread = newThreads[id];
@@ -160,6 +169,7 @@ export const useThreadStore = create<StoreState>()(
             messages: thread.messages.concat(message),
             model: thread.model,
             name: thread.name,
+            tokens: tokens ? tokens : thread.tokens,
           };
           return { threads: newThreads };
         });
@@ -177,6 +187,7 @@ export const useThreadStore = create<StoreState>()(
             ),
             model: thread.model,
             name: thread.name,
+            tokens: thread.tokens,
           };
           return { threads: newThreads };
         });

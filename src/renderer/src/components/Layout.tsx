@@ -127,8 +127,8 @@ export default function Layout() {
         </Stack>
         <Box color="gray" mb={0.5} mx="auto">
           <Typography variant="caption">
-            {numeral(usage.inputTokens).format('0a')}/
-            {numeral(usage.outputTokens).format('0a')} tokens (in/out) ~$
+            {numeral(usage.inputTokens).format('0.[00]a')}/
+            {numeral(usage.outputTokens).format('0.[00]a')} tokens (in/out) ~$
             {numeral(usage.cost).format('0.00a')}
           </Typography>
         </Box>

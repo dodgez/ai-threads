@@ -39,7 +39,7 @@ interface ModelMetadataInfo {
 }
 export const ModelMetadata: Record<ModelId, ModelMetadataInfo> = {
   [ModelId.Claude3Sonnet]: {
-    label: 'Anthropic Claude 3 Sonnet',
+    label: 'Claude 3 Sonnet',
     pricing: {
       input: 3,
       output: 15,
@@ -48,7 +48,7 @@ export const ModelMetadata: Record<ModelId, ModelMetadataInfo> = {
     supportsDocs: true,
   },
   [ModelId.Claude3Haiku]: {
-    label: 'Anthropic Claude 3 Haiku',
+    label: 'Claude 3 Haiku',
     pricing: {
       input: 0.25,
       output: 1.25,
@@ -57,7 +57,7 @@ export const ModelMetadata: Record<ModelId, ModelMetadataInfo> = {
     supportsDocs: true,
   },
   [ModelId.Claude35Sonnet]: {
-    label: 'Anthropic Claude 3.5 Sonnet',
+    label: 'Claude 3.5 Sonnet',
     pricing: {
       input: 3,
       output: 15,
@@ -66,7 +66,7 @@ export const ModelMetadata: Record<ModelId, ModelMetadataInfo> = {
     supportsDocs: false,
   },
   [ModelId.GPT4o]: {
-    label: 'OpenAI GPT-4o',
+    label: 'GPT-4o',
     pricing: {
       input: 5,
       output: 15,
@@ -75,7 +75,7 @@ export const ModelMetadata: Record<ModelId, ModelMetadataInfo> = {
     supportsDocs: false,
   },
   [ModelId.GPT4oMini]: {
-    label: 'OpenAI GPT-4o mini',
+    label: 'GPT-4o mini',
     pricing: {
       input: 0.15,
       output: 0.6,
@@ -89,6 +89,7 @@ export interface ThreadType {
   messages: MessageType[];
   model: ModelId;
   name: string;
+  tokens: number;
 }
 
 export const DocMimeTypeMapping: Record<string, DocumentFormat> = {

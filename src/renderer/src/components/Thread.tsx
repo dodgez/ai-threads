@@ -144,11 +144,15 @@ export default function Thread({
 
       const { textStream } = await streamText({
         onFinish: (evt) => {
-          addMessage(thread.id, {
-            role: 'assistant',
-            content: [{ type: 'text', text: evt.text }],
-            id: uuid(),
-          });
+          addMessage(
+            thread.id,
+            {
+              role: 'assistant',
+              content: [{ type: 'text', text: evt.text }],
+              id: uuid(),
+            },
+            evt.usage.promptTokens + evt.usage.completionTokens,
+          );
           addTokens(
             thread.model,
             evt.usage.promptTokens,

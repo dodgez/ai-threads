@@ -9,6 +9,7 @@ import Paper from '@mui/material/Paper';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import useMediaQuery from '@mui/material/useMediaQuery';
+import numeral from 'numeral';
 import { useState } from 'react';
 
 import type { ThreadType } from '../types';
@@ -40,7 +41,6 @@ export default function ThreadButton({
       onMouseLeave={() => {
         setHovered(false);
       }}
-      pl="34px"
     >
       <Button
         onClick={onClick}
@@ -69,7 +69,7 @@ export default function ThreadButton({
             fontSize: '0.875rem',
           }}
         >
-          {ModelMetadata[thread.model].label}
+          {`${ModelMetadata[thread.model].label} - ${numeral(thread.tokens).format('0.[00]a')} tokens`}
         </Typography>
       </Button>
       <Paper
