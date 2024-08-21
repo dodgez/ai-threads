@@ -19,55 +19,70 @@ const { ipcRenderer } = window.require('electron');
 const storage: StateStorage = {
   getItem: async (name: string): Promise<string | null> =>
     (await get(name)) ?? null,
+  removeItem: async (name: string): Promise<void> => del(name),
   setItem: async (name: string, value: string): Promise<void> =>
     set(name, value),
-  removeItem: async (name: string): Promise<void> => del(name),
 };
 
 interface StoreState {
   _hasHydrated: boolean;
-  setHasHydrated: (state: boolean) => void;
-  playbackSpeed: number;
-  setPlaybackSpeed: (playbackSpeed: number) => void;
-  awsCredProfile?: string;
-  setAwsCredProfile: (state?: string) => void;
-  openAIKey?: string;
-  setOpenAIKey: (key?: string) => void;
-  threads: Record<ThreadType['id'], ThreadType | undefined>;
-  createThread: (message: MessageType, model: ModelId) => ThreadType['id'];
-  renameThread: (id: ThreadType['id'], name: string) => void;
-  deleteThread: (id: ThreadType['id']) => void;
-  setThreadModel: (id: ThreadType['id'], model: ModelId) => void;
   addMessage: (
     id: ThreadType['id'],
     message: MessageType,
     tokens?: number,
   ) => void;
-  removeMessage: (id: ThreadType['id'], messageId: MessageType['id']) => void;
-  tokens: Record<ModelId, { input: number; output: number }>;
   addTokens: (model: ModelId, input: number, output: number) => void;
+  awsCredProfile?: string;
+  createThread: (message: MessageType, model: ModelId) => ThreadType['id'];
+  deleteThread: (id: ThreadType['id']) => void;
+  openAIKey?: string;
+  playbackSpeed: number;
+  removeMessage: (id: ThreadType['id'], messageId: MessageType['id']) => void;
+  renameThread: (id: ThreadType['id'], name: string) => void;
+  setAwsCredProfile: (state?: string) => void;
+  setHasHydrated: (state: boolean) => void;
+  setOpenAIKey: (key?: string) => void;
+  setPlaybackSpeed: (playbackSpeed: number) => void;
+  setThreadModel: (id: ThreadType['id'], model: ModelId) => void;
+  threads: Record<ThreadType['id'], ThreadType | undefined>;
+  tokens: Record<ModelId, { input: number; output: number }>;
 }
 
 export const useThreadStore = create<StoreState>()(
   persist(
     (set, get) => ({
       _hasHydrated: false,
-      setHasHydrated: (state: boolean) => {
-        set({ _hasHydrated: state });
+      addMessage: (
+        id: ThreadType['id'],
+        message: MessageType,
+        tokens?: number,
+      ) => {
+        set(({ threads }) => {
+          const newThreads = { ...threads };
+          const thread = newThreads[id];
+          if (!thread) return { threads };
+
+          newThreads[id] = {
+            id,
+            messages: thread.messages.concat(message),
+            model: thread.model,
+            name: thread.name,
+            tokens: tokens ? tokens : thread.tokens,
+          };
+          return { threads: newThreads };
+        });
       },
-      playbackSpeed: 1.5,
-      setPlaybackSpeed: (playbackSpeed: number) => {
-        set({ playbackSpeed });
+      addTokens: (model: ModelId, input: number, output: number) => {
+        set(({ tokens }) => {
+          const newTokens = structuredClone(tokens);
+
+          newTokens[model].input += input;
+          newTokens[model].output += output;
+
+          return { tokens: newTokens };
+        });
       },
       awsCredProfile: undefined,
-      setAwsCredProfile: (state?: string) => {
-        set({ awsCredProfile: state });
-      },
-      openAIKey: undefined,
-      setOpenAIKey: (key?: string) => {
-        set({ openAIKey: key });
-      },
-      threads: {},
       createThread: (message: MessageType, model: ModelId) => {
         const id = uuid();
         set(({ threads }) => {
@@ -90,12 +105,12 @@ export const useThreadStore = create<StoreState>()(
           if (!firstMessage) return 'New chat';
           const messages = [
             {
-              role: ConversationRole.USER,
               content: [
                 {
                   text: `Based on this opening question: "${firstMessage}", what would be a concise and descriptive name for this conversation thread? Only provide the name, not any other information or explanation.`,
                 },
               ],
+              role: ConversationRole.USER,
             },
           ];
           const profile = get().awsCredProfile;
@@ -109,8 +124,8 @@ export const useThreadStore = create<StoreState>()(
             region: 'us-west-2',
           });
           const command = new ConverseCommand({
-            modelId: ModelId.Claude3Haiku,
             messages,
+            modelId: ModelId.Claude3Haiku,
           });
 
           const { output } = await client.send(command);
@@ -129,15 +144,6 @@ export const useThreadStore = create<StoreState>()(
 
         return id;
       },
-      renameThread: (id: ThreadType['id'], name: string) => {
-        set(({ threads }) => {
-          const newThreads = { ...threads };
-          if (!newThreads[id]) return { threads };
-
-          newThreads[id] = { ...newThreads[id], name };
-          return { threads: newThreads };
-        });
-      },
       deleteThread: (id: ThreadType['id']) => {
         set(({ threads }) => {
           const newThreads = { ...threads };
@@ -145,35 +151,8 @@ export const useThreadStore = create<StoreState>()(
           return { threads: newThreads };
         });
       },
-      setThreadModel: (id: ThreadType['id'], model: ModelId) => {
-        set(({ threads }) => {
-          const newThreads = { ...threads };
-          if (!newThreads[id]) return { threads };
-
-          newThreads[id] = { ...newThreads[id], model };
-          return { threads: newThreads };
-        });
-      },
-      addMessage: (
-        id: ThreadType['id'],
-        message: MessageType,
-        tokens?: number,
-      ) => {
-        set(({ threads }) => {
-          const newThreads = { ...threads };
-          const thread = newThreads[id];
-          if (!thread) return { threads };
-
-          newThreads[id] = {
-            id,
-            messages: thread.messages.concat(message),
-            model: thread.model,
-            name: thread.name,
-            tokens: tokens ? tokens : thread.tokens,
-          };
-          return { threads: newThreads };
-        });
-      },
+      openAIKey: undefined,
+      playbackSpeed: 1.5,
       removeMessage: (id: ThreadType['id'], messageId: MessageType['id']) => {
         set(({ threads }) => {
           const newThreads = { ...threads };
@@ -192,8 +171,39 @@ export const useThreadStore = create<StoreState>()(
           return { threads: newThreads };
         });
       },
+      renameThread: (id: ThreadType['id'], name: string) => {
+        set(({ threads }) => {
+          const newThreads = { ...threads };
+          if (!newThreads[id]) return { threads };
+
+          newThreads[id] = { ...newThreads[id], name };
+          return { threads: newThreads };
+        });
+      },
+      setAwsCredProfile: (state?: string) => {
+        set({ awsCredProfile: state });
+      },
+      setHasHydrated: (state: boolean) => {
+        set({ _hasHydrated: state });
+      },
+      setOpenAIKey: (key?: string) => {
+        set({ openAIKey: key });
+      },
+      setPlaybackSpeed: (playbackSpeed: number) => {
+        set({ playbackSpeed });
+      },
+      setThreadModel: (id: ThreadType['id'], model: ModelId) => {
+        set(({ threads }) => {
+          const newThreads = { ...threads };
+          if (!newThreads[id]) return { threads };
+
+          newThreads[id] = { ...newThreads[id], model };
+          return { threads: newThreads };
+        });
+      },
+      threads: {},
       tokens: {
-        [ModelId.Claude3Sonnet]: {
+        [ModelId.Claude35Sonnet]: {
           input: 0,
           output: 0,
         },
@@ -201,7 +211,7 @@ export const useThreadStore = create<StoreState>()(
           input: 0,
           output: 0,
         },
-        [ModelId.Claude35Sonnet]: {
+        [ModelId.Claude3Sonnet]: {
           input: 0,
           output: 0,
         },
@@ -213,16 +223,6 @@ export const useThreadStore = create<StoreState>()(
           input: 0,
           output: 0,
         },
-      },
-      addTokens: (model: ModelId, input: number, output: number) => {
-        set(({ tokens }) => {
-          const newTokens = structuredClone(tokens);
-
-          newTokens[model].input += input;
-          newTokens[model].output += output;
-
-          return { tokens: newTokens };
-        });
       },
     }),
     {

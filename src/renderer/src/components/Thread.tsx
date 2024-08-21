@@ -183,13 +183,15 @@ export default function Thread({
       }
 
       const { textStream } = await streamText({
+        messages,
+        model,
         onFinish: (evt) => {
           addMessage(
             thread.id,
             {
-              role: 'assistant',
-              content: [{ type: 'text', text: evt.text }],
+              content: [{ text: evt.text, type: 'text' }],
               id: uuid(),
+              role: 'assistant',
             },
             evt.usage.promptTokens + evt.usage.completionTokens,
           );
@@ -201,8 +203,6 @@ export default function Thread({
           cleanup();
           setTimeout(jumpBottomListener, 0);
         },
-        model,
-        messages,
       }).catch((e: unknown) => {
         enqueueSnackbar(`Error sending messages: ${JSON.stringify(e)}`, {
           autoHideDuration: 3000,
@@ -251,14 +251,14 @@ export default function Thread({
         void sendMessages(thread.messages);
       } else {
         const newTextMessage: TextPart = {
-          type: 'text',
-          text: message,
           id: uuid(),
+          text: message,
+          type: 'text',
         };
         const newMessage: MessageType = {
-          role: 'user',
           content: [newTextMessage, ...docs, ...images],
           id: uuid(),
+          role: 'user',
         };
         addMessage(thread.id, newMessage);
         if (isScrolledBottom()) {
@@ -300,9 +300,9 @@ export default function Thread({
           {streamingResponse && (
             <Message
               message={{
-                role: 'assistant',
-                content: [{ type: 'text', text: streamingResponse }],
+                content: [{ text: streamingResponse, type: 'text' }],
                 id: undefined,
+                role: 'assistant',
               }}
               thread={thread}
             />

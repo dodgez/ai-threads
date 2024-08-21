@@ -27,15 +27,15 @@ export default function LandingPage({
   const onSubmit = useCallback(
     (message: string, docs: FilePart[], images: ImagePart[]) => {
       const newMessage: TextPart & { id: string } = {
-        type: 'text',
-        text: message,
         id: uuid(),
+        text: message,
+        type: 'text',
       };
       const newId = createThread(
         {
-          role: 'user',
           content: [newMessage, ...docs, ...images],
           id: uuid(),
+          role: 'user',
         },
         model,
       );

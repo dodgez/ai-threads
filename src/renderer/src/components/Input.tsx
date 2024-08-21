@@ -64,11 +64,11 @@ export default function Input({
         });
         if (!data) return undefined;
         return {
-          type: 'file',
           file: data,
           id: uuid(),
-          name: file.name.replace(/\.\w+$/, ''),
           mimeType: file.type,
+          name: file.name.replace(/\.\w+$/, ''),
+          type: 'file',
         };
       }),
     );
@@ -93,11 +93,11 @@ export default function Input({
         });
         if (!buffer) return undefined;
         return {
-          type: 'image',
           format,
-          image: Buffer.from(buffer).toString('base64'),
           id: uuid(),
+          image: Buffer.from(buffer).toString('base64'),
           name: file.name,
+          type: 'image',
         };
       }),
     );

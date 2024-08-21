@@ -43,8 +43,8 @@ export default function Transcriber({
     if (!creds) return;
 
     const client = new TranscribeStreamingClient({
-      region: 'us-west-2',
       credentials: creds,
+      region: 'us-west-2',
     });
 
     setIsRecording(true);
@@ -84,10 +84,10 @@ export default function Transcriber({
     };
 
     const command = new StartStreamTranscriptionCommand({
+      AudioStream: audioStream(),
       LanguageCode: 'en-US',
       MediaEncoding: 'pcm',
       MediaSampleRateHertz: micStream.context.sampleRate,
-      AudioStream: audioStream(),
     });
 
     try {

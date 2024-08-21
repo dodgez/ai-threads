@@ -63,11 +63,11 @@ export default function ThreadButton({
           <Box display="flex" flexDirection="column" flexGrow={1}>
             <Typography variant="body1">{thread.name}</Typography>
             <Typography
-              variant="body2"
               sx={{
                 color: (theme) => theme.palette.text.secondary,
                 fontSize: '0.875rem',
               }}
+              variant="body2"
             >
               {`${ModelMetadata[thread.model].label} - ${numeral(thread.tokens).format('0.[00]a')} tokens`}
             </Typography>

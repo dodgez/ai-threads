@@ -43,8 +43,8 @@ export default function Synthesizer({ text }: { text: string }) {
     }
 
     const client = new PollyClient({
-      region: 'us-west-2',
       credentials: creds,
+      region: 'us-west-2',
     });
 
     const params = {

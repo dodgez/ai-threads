@@ -11,16 +11,16 @@ export type ImagePart = AIImagePart & { id: string; name: string };
 export type FilePart = AIFilePart & { id: string; name: string };
 
 interface UserMessage {
+  content: (FilePart | ImagePart | TextPart)[];
   role: 'user';
-  content: (TextPart | ImagePart | FilePart)[];
 }
 export type MessageType = (CoreAssistantMessage | UserMessage) & {
   id: string;
 };
 export enum ModelId {
-  Claude3Sonnet = 'anthropic.claude-3-sonnet-20240229-v1:0',
-  Claude3Haiku = 'anthropic.claude-3-haiku-20240307-v1:0',
   Claude35Sonnet = 'anthropic.claude-3-5-sonnet-20240620-v1:0',
+  Claude3Haiku = 'anthropic.claude-3-haiku-20240307-v1:0',
+  Claude3Sonnet = 'anthropic.claude-3-sonnet-20240229-v1:0',
   GPT4o = 'gpt-4o',
   GPT4oMini = 'gpt-4o-mini',
 }
@@ -38,14 +38,14 @@ interface ModelMetadataInfo {
   supportsDocs: boolean;
 }
 export const ModelMetadata: Record<ModelId, ModelMetadataInfo> = {
-  [ModelId.Claude3Sonnet]: {
-    label: 'Claude 3 Sonnet',
+  [ModelId.Claude35Sonnet]: {
+    label: 'Claude 3.5 Sonnet',
     pricing: {
       input: 3,
       output: 15,
     },
     provider: Provider.AmazonBedrock,
-    supportsDocs: true,
+    supportsDocs: false,
   },
   [ModelId.Claude3Haiku]: {
     label: 'Claude 3 Haiku',
@@ -56,14 +56,14 @@ export const ModelMetadata: Record<ModelId, ModelMetadataInfo> = {
     provider: Provider.AmazonBedrock,
     supportsDocs: true,
   },
-  [ModelId.Claude35Sonnet]: {
-    label: 'Claude 3.5 Sonnet',
+  [ModelId.Claude3Sonnet]: {
+    label: 'Claude 3 Sonnet',
     pricing: {
       input: 3,
       output: 15,
     },
     provider: Provider.AmazonBedrock,
-    supportsDocs: false,
+    supportsDocs: true,
   },
   [ModelId.GPT4o]: {
     label: 'GPT-4o',

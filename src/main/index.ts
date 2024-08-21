@@ -9,13 +9,13 @@ void import('electron-context-menu').then((cm) => {
 
 function createWindow() {
   const mainWindow = new BrowserWindow({
-    width: 1280,
     height: 720,
     webPreferences: {
       contextIsolation: false,
       nodeIntegration: true,
       preload: join(__dirname, '../preload/index.js'),
     },
+    width: 1280,
   });
 
   if (is.dev && process.env.ELECTRON_RENDERER_URL) {

@@ -26,7 +26,7 @@ const { shell } = window.require('electron');
 function Content({
   contentBlock,
 }: {
-  contentBlock: TextPart | ImagePart | FilePart | ToolCallPart | ToolResultPart;
+  contentBlock: FilePart | ImagePart | TextPart | ToolCallPart | ToolResultPart;
 }) {
   if (contentBlock.type === 'text') {
     return (

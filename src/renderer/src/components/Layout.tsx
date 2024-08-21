@@ -90,12 +90,12 @@ export default function Layout() {
       <Drawer
         anchor="left"
         sx={{
-          flexShrink: 0,
-          width: 300,
           '& .MuiDrawer-paper': {
             boxSizing: 'border-box',
             width: 300,
           },
+          flexShrink: 0,
+          width: 300,
         }}
         variant="permanent"
       >
@@ -151,14 +151,14 @@ export default function Layout() {
           boxShadow={24}
           left="50%"
           pb={2}
+          position="absolute"
           pt={4}
           px={4}
-          position="absolute"
-          top="50%"
           sx={{
             backgroundColor: (theme) => theme.palette.background.paper,
             transform: 'translate(-50%, -50%)',
           }}
+          top="50%"
           width="400px"
         >
           <Stack spacing={2}>
