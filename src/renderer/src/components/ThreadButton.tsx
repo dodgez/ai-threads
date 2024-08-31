@@ -4,6 +4,7 @@ import Save from '@mui/icons-material/Save';
 import Undo from '@mui/icons-material/Undo';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
 import Paper from '@mui/material/Paper';
 import TextField from '@mui/material/TextField';
@@ -42,8 +43,7 @@ export default function ThreadButton({
         setHovered(false);
       }}
     >
-      <Button
-        onClick={onClick}
+      <Box
         sx={{
           alignItems: 'flex-start',
           backgroundColor: (theme) =>
@@ -54,13 +54,22 @@ export default function ThreadButton({
               : undefined,
           color: (theme) => theme.palette.text.primary,
           flexGrow: 1,
-          textAlign: 'left',
-          textTransform: 'none',
           width: '100%',
         }}
       >
         <Box display="flex" flexDirection="row" flexGrow={1}>
-          <Box display="flex" flexDirection="column" flexGrow={1}>
+          <Button
+            onClick={onClick}
+            sx={{
+              alignItems: 'start',
+              color: (theme) => theme.palette.text.primary,
+              display: 'flex',
+              flexDirection: 'column',
+              flexGrow: 1,
+              textAlign: 'left',
+              textTransform: 'none',
+            }}
+          >
             <Typography variant="body1">{thread.name}</Typography>
             <Typography
               sx={{
@@ -71,12 +80,13 @@ export default function ThreadButton({
             >
               {`${ModelMetadata[thread.model].label} - ${numeral(thread.tokens).format('0.[00]a')} tokens`}
             </Typography>
-          </Box>
+          </Button>
           <Paper
             sx={{
               backgroundColor: (theme) => theme.palette.background.default,
               display: 'inline-flex',
               flexDirection: 'column',
+              justifyContent: 'space-evenly',
               visibility: hovered ? 'visible' : 'hidden',
             }}
           >
@@ -89,6 +99,7 @@ export default function ThreadButton({
             >
               <Edit />
             </IconButton>
+            <Divider />
             <IconButton
               onClick={() => {
                 deleteThread(thread.id);
@@ -99,7 +110,7 @@ export default function ThreadButton({
             </IconButton>
           </Paper>
         </Box>
-      </Button>
+      </Box>
     </Box>
   ) : (
     <Box alignItems="center" display="flex">
