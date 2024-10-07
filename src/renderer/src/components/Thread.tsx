@@ -4,16 +4,21 @@ import {
   GetSecretValueCommand,
   SecretsManagerClient,
 } from '@aws-sdk/client-secrets-manager';
+import ArrowDownward from '@mui/icons-material/ArrowDownward';
+import Menu from '@mui/icons-material/Menu';
 import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
 import Container from '@mui/material/Container';
+import Divider from '@mui/material/Divider';
+import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import type { AwsCredentialIdentity } from '@smithy/types';
 import type { CoreMessage, LanguageModel } from 'ai';
 import { streamText } from 'ai';
 import { enqueueSnackbar } from 'notistack';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import numeral from 'numeral';
+import type { Dispatch, SetStateAction } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { throttle } from 'throttle-debounce';
 import { v4 as uuid } from 'uuid';
 
@@ -66,9 +71,13 @@ async function getSecretKey(
 
 export default function Thread({
   created,
+  drawerOpen,
+  setDrawerOpen,
   thread,
 }: {
   created: boolean;
+  drawerOpen: boolean;
+  setDrawerOpen: Dispatch<SetStateAction<boolean>>;
   thread: ThreadType;
 }) {
   const addMessage = useThreadStore((state) => state.addMessage);
@@ -89,24 +98,20 @@ export default function Thread({
   useEffect(() => {
     if (streamingResponse?.threadId === thread.id) {
       bottomRef.current?.scrollIntoView({
-        behavior: 'instant',
+        behavior: 'auto',
       });
     } else {
       window.scrollTo({
-        behavior: 'smooth',
+        behavior: 'auto',
         top: 0,
       });
     }
   }, [streamingResponse?.threadId, thread.id]);
 
   const [showJump, setShowJump] = useState(false);
-  const jumpBottomListener = useMemo(
-    () =>
-      throttle(50, () => {
-        setShowJump(!isScrolledBottom());
-      }),
-    [],
-  );
+  const jumpBottomListener = useCallback(() => {
+    setShowJump(!isScrolledBottom());
+  }, []);
   useEffect(() => {
     window.addEventListener('scroll', jumpBottomListener);
     jumpBottomListener();
@@ -226,7 +231,7 @@ export default function Thread({
       try {
         const throttledScroll = throttle(300, () => {
           bottomRef.current?.scrollIntoView({
-            behavior: 'smooth',
+            behavior: 'auto',
           });
         });
         for await (const text of textStream) {
@@ -299,18 +304,35 @@ export default function Thread({
   }
 
   return (
-    <Box
-      display="flex"
-      flexDirection="column"
-      flexGrow={1}
-      height="100%"
-      mx="auto"
-    >
+    <Box display="flex" flexDirection="column" flexGrow={1} mx="auto">
+      <Box
+        position="sticky"
+        sx={{ backgroundColor: (theme) => theme.palette.background.default }}
+        top={0}
+      >
+        <Box alignItems="center" display="flex" pl={drawerOpen ? 1 : 0}>
+          {!drawerOpen && (
+            <Box>
+              <IconButton
+                onClick={() => {
+                  setDrawerOpen(true);
+                }}
+              >
+                <Menu />
+              </IconButton>
+            </Box>
+          )}
+          <Box display="flex" flexDirection="column" flexGrow={1} p={0}>
+            <Typography variant="h6">{thread.name}</Typography>
+            <Typography color="grey" variant="subtitle1">
+              {`${ModelMetadata[thread.model].label} - ${numeral(thread.tokens).format('0.[00]a')} tokens`}
+            </Typography>
+          </Box>
+        </Box>
+        <Divider />
+      </Box>
       <Container maxWidth="lg" sx={{ flexGrow: 1, p: 2 }}>
         <Stack spacing={2}>
-          <Typography color="grey" variant="h6">
-            {ModelMetadata[thread.model].label}
-          </Typography>
           {thread.messages.map((message) => (
             <Message key={message.id} message={message} thread={thread} />
           ))}
@@ -331,22 +353,21 @@ export default function Thread({
         inputRef={inputRef}
         jumpButton={
           showJump && (
-            <Box
-              mb={1}
-              sx={{
-                backgroundColor: (theme) => theme.palette.background.default,
-              }}
-            >
-              <Button
+            <Box mb={1}>
+              <IconButton
+                disableRipple
                 onClick={() => {
                   bottomRef.current?.scrollIntoView({
-                    behavior: 'smooth',
+                    behavior: 'auto',
                   });
                 }}
-                variant="outlined"
+                sx={{
+                  backgroundColor: (theme) => theme.palette.background.default,
+                  outline: 'solid 1px grey',
+                }}
               >
-                Jump to latest message
-              </Button>
+                <ArrowDownward />
+              </IconButton>
             </Box>
           )
         }

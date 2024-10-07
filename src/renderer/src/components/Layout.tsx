@@ -1,3 +1,4 @@
+import ArrowBackIos from '@mui/icons-material/ArrowBackIos';
 import HelpOutline from '@mui/icons-material/HelpOutline';
 import Settings from '@mui/icons-material/Settings';
 import Box from '@mui/material/Box';
@@ -24,6 +25,8 @@ import type { ModelId, ThreadType } from '../types';
 import { ModelMetadata } from '../types';
 import { useThreadStore } from '../useThreadStore';
 
+const DRAWER_WIDTH = 300;
+
 export default function Layout() {
   const hasHydrated = useThreadStore((state) => state._hasHydrated);
   const awsCredProfile = useThreadStore((state) => state.awsCredProfile);
@@ -31,6 +34,8 @@ export default function Layout() {
   const openAIKey = useThreadStore((state) => state.openAIKey);
   const setOpenAIKey = useThreadStore((state) => state.setOpenAIKey);
   const threads = useThreadStore((state) => state.threads);
+  const closeDrawer = useThreadStore((state) => state.closeDrawer);
+  const setCloseDrawer = useThreadStore((state) => state.setCloseDrawer);
   const [activeThreadId, setActiveThreadId] = useState<ThreadType['id']>();
   const activeThread = activeThreadId ? threads[activeThreadId] : undefined;
   const tokens = useThreadStore((state) => state.tokens);
@@ -72,6 +77,8 @@ export default function Layout() {
     setChecked(!openAIKey);
   }, [openAIKey]);
 
+  const [drawerOpen, setDrawerOpen] = useState(true);
+
   if (!hasHydrated) {
     return (
       <Box
@@ -86,20 +93,20 @@ export default function Layout() {
   }
 
   return (
-    <Box display="flex" height="100vh">
+    <Box display="flex" height="100vh" minHeight="fit-content">
       <Drawer
         anchor="left"
         sx={{
           '& .MuiDrawer-paper': {
             boxSizing: 'border-box',
-            width: 300,
+            width: drawerOpen ? DRAWER_WIDTH : 0,
           },
           flexShrink: 0,
-          width: 300,
+          width: drawerOpen ? DRAWER_WIDTH : 0,
         }}
         variant="permanent"
       >
-        <Box display="flex" m={2}>
+        <Box display="flex" m={1} mr={0}>
           <Button
             disabled={!activeThread}
             onClick={() => {
@@ -117,6 +124,15 @@ export default function Layout() {
           >
             <Settings />
           </IconButton>
+          {activeThread && (
+            <IconButton
+              onClick={() => {
+                setDrawerOpen(false);
+              }}
+            >
+              <ArrowBackIos />
+            </IconButton>
+          )}
         </Box>
         <Divider />
         <Stack sx={{ flexGrow: 1, overflow: 'auto' }}>
@@ -130,6 +146,9 @@ export default function Layout() {
                 key={thread.id}
                 onClick={() => {
                   setActiveThreadId(thread.id);
+                  if (closeDrawer) {
+                    setDrawerOpen(false);
+                  }
                 }}
                 thread={thread}
               />
@@ -242,6 +261,37 @@ export default function Layout() {
                 value={openAIKey}
               />
             )}
+            <Divider />
+            <Typography textAlign="center" variant="h6">
+              Miscellaneous configuration
+            </Typography>
+            <Box display="flex">
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={closeDrawer}
+                    onChange={({ target }) => {
+                      setCloseDrawer(target.checked);
+                    }}
+                  />
+                }
+                label="Close drawer on thread selection"
+                labelPlacement="start"
+                sx={{ flexGrow: 1 }}
+              />
+              <Tooltip
+                title={
+                  <Typography>
+                    Automatically close the left drawer after selecting a
+                    conversation thread.
+                  </Typography>
+                }
+              >
+                <IconButton>
+                  <HelpOutline />
+                </IconButton>
+              </Tooltip>
+            </Box>
             <Button
               onClick={() => {
                 setModalOpen(false);
@@ -255,6 +305,8 @@ export default function Layout() {
       {activeThread ? (
         <Thread
           created={lastCreatedThreadId === activeThreadId}
+          drawerOpen={drawerOpen}
+          setDrawerOpen={setDrawerOpen}
           thread={activeThread}
         />
       ) : (
