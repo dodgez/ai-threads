@@ -64,7 +64,7 @@ export default function Input({
         });
         if (!data) return undefined;
         return {
-          file: data,
+          data,
           id: uuid(),
           mimeType: file.type,
           name: file.name.replace(/\.\w+$/, ''),

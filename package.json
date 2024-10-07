@@ -33,7 +33,7 @@
     "@fontsource/roboto": "^5.0.13",
     "@mui/icons-material": "^5.15.20",
     "@mui/material": "^5.15.20",
-    "ai": "https://github.com/dodgez/ai/releases/download/ai%401.0.0/ai.tar.gz",
+    "ai": "^3.4.9",
     "electron-context-menu": "^4.0.1",
     "idb-keyval": "^6.2.1",
     "microphone-stream": "^6.0.1",
