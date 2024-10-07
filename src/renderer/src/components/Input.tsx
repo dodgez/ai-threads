@@ -147,6 +147,7 @@ export default function Input({
           alignItems="center"
           display="flex"
           pb={docs.length || images.length ? 1 : 2}
+          pr={2}
           pt={2}
         >
           <Transcriber onVoiceData={onVoiceData} />
@@ -215,7 +216,12 @@ export default function Input({
                 <Stop />
               </IconButton>
             ) : (
-              <CircularProgress sx={{ padding: 1 }} />
+              <Box p={1}>
+                <CircularProgress
+                  size="1.25rem"
+                  sx={{ verticalAlign: 'middle' }}
+                />
+              </Box>
             )
           ) : (
             <IconButton

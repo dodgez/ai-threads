@@ -13,7 +13,8 @@ import type { AwsCredentialIdentity } from '@smithy/types';
 import type { CoreMessage, LanguageModel } from 'ai';
 import { streamText } from 'ai';
 import { enqueueSnackbar } from 'notistack';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { debounce, throttle } from 'throttle-debounce';
 import { v4 as uuid } from 'uuid';
 
 import Input from './Input';
@@ -82,11 +83,6 @@ export default function Thread({
   // Used for focusing the input after response
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const aborted = useRef(false);
-  const onCancel = useCallback(() => {
-    aborted.current = true;
-  }, []);
-
   useEffect(() => {
     window.scrollTo({
       behavior: 'smooth',
@@ -95,13 +91,17 @@ export default function Thread({
   }, [thread.id]);
 
   const [showJump, setShowJump] = useState(false);
-  const jumpBottomListener = useCallback(() => {
-    if (!isScrolledBottom()) {
-      setShowJump(true);
-    } else {
-      setShowJump(false);
-    }
-  }, []);
+  const jumpBottomListener = useMemo(
+    () =>
+      debounce(
+        100,
+        () => {
+          setShowJump(!isScrolledBottom());
+        },
+        { atBegin: false },
+      ),
+    [],
+  );
   useEffect(() => {
     window.addEventListener('scroll', jumpBottomListener);
     jumpBottomListener();
@@ -114,7 +114,6 @@ export default function Thread({
   const sendMessages = useCallback(
     async (messages: CoreMessage[]) => {
       const cleanup = () => {
-        aborted.current = false;
         setLoading(false);
         setStreamingResponse(undefined);
         setTimeout(() => inputRef.current?.focus(), 0);
@@ -218,8 +217,17 @@ export default function Thread({
 
       setStreamingResponse('');
       try {
+        const shouldScroll = isScrolledBottom();
+        const throttledScroll = throttle(300, () => {
+          bottomRef.current?.scrollIntoView({
+            behavior: 'smooth',
+          });
+        });
         for await (const text of textStream) {
           setStreamingResponse((res) => (res ?? '') + text);
+          if (shouldScroll) {
+            throttledScroll();
+          }
         }
       } catch (e: unknown) {
         enqueueSnackbar(`Error reading response: ${JSON.stringify(e)}`, {
@@ -335,7 +343,6 @@ export default function Thread({
         }
         loading={loading}
         modelId={thread.model}
-        onCancel={onCancel}
         onSubmit={onSubmit}
         overrideCanSubmit={
           thread.messages.length > 0 &&
