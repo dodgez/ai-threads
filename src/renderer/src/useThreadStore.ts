@@ -107,7 +107,7 @@ export const useThreadStore = create<StoreState>()(
             {
               content: [
                 {
-                  text: `Based on this opening question: "${firstMessage}", what would be a concise and descriptive name for this conversation thread? Only provide the name, not any other information or explanation.`,
+                  text: `Based on this opening question: "${firstMessage}", what would be a concise and descriptive name for this conversation thread? Only provide the name, not any other information or explanation. Do not put quotes around the name.`,
                 },
               ],
               role: ConversationRole.USER,

@@ -118,7 +118,7 @@ export default function ThreadButton({
         onChange={({ target }) => {
           setNewName(target.value);
         }}
-        sx={{ flexGrow: 1, ml: '34px' }}
+        sx={{ flexGrow: 1 }}
         value={newName}
       />
       <Box display="flex" flexDirection="column">

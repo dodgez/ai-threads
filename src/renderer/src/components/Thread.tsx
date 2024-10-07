@@ -14,7 +14,7 @@ import type { CoreMessage, LanguageModel } from 'ai';
 import { streamText } from 'ai';
 import { enqueueSnackbar } from 'notistack';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { debounce, throttle } from 'throttle-debounce';
+import { throttle } from 'throttle-debounce';
 import { v4 as uuid } from 'uuid';
 
 import Input from './Input';
@@ -93,13 +93,9 @@ export default function Thread({
   const [showJump, setShowJump] = useState(false);
   const jumpBottomListener = useMemo(
     () =>
-      debounce(
-        100,
-        () => {
-          setShowJump(!isScrolledBottom());
-        },
-        { atBegin: false },
-      ),
+      throttle(50, () => {
+        setShowJump(!isScrolledBottom());
+      }),
     [],
   );
   useEffect(() => {
@@ -217,7 +213,6 @@ export default function Thread({
 
       setStreamingResponse('');
       try {
-        const shouldScroll = isScrolledBottom();
         const throttledScroll = throttle(300, () => {
           bottomRef.current?.scrollIntoView({
             behavior: 'smooth',
@@ -225,7 +220,7 @@ export default function Thread({
         });
         for await (const text of textStream) {
           setStreamingResponse((res) => (res ?? '') + text);
-          if (shouldScroll) {
+          if (isScrolledBottom()) {
             throttledScroll();
           }
         }
