@@ -75,7 +75,10 @@ export default function Thread({
   const addTokens = useThreadStore((state) => state.addTokens);
   const awsCredProfile = useThreadStore((state) => state.awsCredProfile);
   const openAIKey = useThreadStore((state) => state.openAIKey);
-  const [streamingResponse, setStreamingResponse] = useState<string>();
+  const [streamingResponse, setStreamingResponse] = useState<{
+    response: string;
+    threadId: ThreadType['id'];
+  }>();
 
   // Used for scrolling messages into view
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -84,11 +87,17 @@ export default function Thread({
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    window.scrollTo({
-      behavior: 'smooth',
-      top: 0,
-    });
-  }, [thread.id]);
+    if (streamingResponse?.threadId === thread.id) {
+      bottomRef.current?.scrollIntoView({
+        behavior: 'instant',
+      });
+    } else {
+      window.scrollTo({
+        behavior: 'smooth',
+        top: 0,
+      });
+    }
+  }, [streamingResponse?.threadId, thread.id]);
 
   const [showJump, setShowJump] = useState(false);
   const jumpBottomListener = useMemo(
@@ -112,12 +121,14 @@ export default function Thread({
       const cleanup = () => {
         setLoading(false);
         setStreamingResponse(undefined);
-        setTimeout(() => inputRef.current?.focus(), 0);
-        if (isScrolledBottom()) {
-          bottomRef.current?.scrollIntoView({
-            behavior: 'auto',
-          });
-        }
+        setTimeout(() => {
+          inputRef.current?.focus();
+          if (isScrolledBottom()) {
+            bottomRef.current?.scrollIntoView({
+              behavior: 'auto',
+            });
+          }
+        }, 0);
       };
 
       const creds = (await ipcRenderer
@@ -211,7 +222,7 @@ export default function Thread({
         return;
       }
 
-      setStreamingResponse('');
+      setStreamingResponse({ response: '', threadId: thread.id });
       try {
         const throttledScroll = throttle(300, () => {
           bottomRef.current?.scrollIntoView({
@@ -219,7 +230,10 @@ export default function Thread({
           });
         });
         for await (const text of textStream) {
-          setStreamingResponse((res) => (res ?? '') + text);
+          setStreamingResponse((res) => ({
+            response: (res?.response ?? '') + text,
+            threadId: thread.id,
+          }));
           if (isScrolledBottom()) {
             throttledScroll();
           }
@@ -300,10 +314,10 @@ export default function Thread({
           {thread.messages.map((message) => (
             <Message key={message.id} message={message} thread={thread} />
           ))}
-          {streamingResponse && (
+          {streamingResponse && streamingResponse.threadId === thread.id && (
             <Message
               message={{
-                content: [{ text: streamingResponse, type: 'text' }],
+                content: [{ text: streamingResponse.response, type: 'text' }],
                 id: undefined,
                 role: 'assistant',
               }}
