@@ -7,9 +7,10 @@ import {
 import ArrowDownward from '@mui/icons-material/ArrowDownward';
 import Menu from '@mui/icons-material/Menu';
 import Box from '@mui/material/Box';
-import Container from '@mui/material/Container';
 import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
+import MenuItem from '@mui/material/MenuItem';
+import Select from '@mui/material/Select';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import type { AwsCredentialIdentity } from '@smithy/types';
@@ -18,7 +19,7 @@ import { streamText } from 'ai';
 import { enqueueSnackbar } from 'notistack';
 import numeral from 'numeral';
 import type { Dispatch, SetStateAction } from 'react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { throttle } from 'throttle-debounce';
 import { v4 as uuid } from 'uuid';
 
@@ -28,6 +29,7 @@ import type {
   FilePart,
   ImagePart,
   MessageType,
+  ModelId,
   TextPart,
   ThreadType,
 } from '../types';
@@ -84,6 +86,7 @@ export default function Thread({
   const addTokens = useThreadStore((state) => state.addTokens);
   const awsCredProfile = useThreadStore((state) => state.awsCredProfile);
   const openAIKey = useThreadStore((state) => state.openAIKey);
+  const setThreadModel = useThreadStore((state) => state.setThreadModel);
   const [streamingResponse, setStreamingResponse] = useState<{
     response: string;
     threadId: ThreadType['id'];
@@ -204,7 +207,13 @@ export default function Thread({
               id: uuid(),
               role: 'assistant',
             },
-            evt.usage.promptTokens + evt.usage.completionTokens,
+            {
+              modelId: thread.model,
+              tokens: {
+                input: evt.usage.promptTokens,
+                output: evt.usage.completionTokens,
+              },
+            },
           );
           addTokens(
             thread.model,
@@ -303,6 +312,20 @@ export default function Thread({
     void sendMessages(thread.messages);
   }
 
+  const cost = useMemo(
+    () =>
+      Object.entries(thread.tokens).reduce(
+        (cost, [modelId, { input, output }]) =>
+          cost +
+          (ModelMetadata[modelId as ModelId].pricing.input * input) /
+            1_000_000 +
+          (ModelMetadata[modelId as ModelId].pricing.output * output) /
+            1_000_000,
+        0,
+      ),
+    [thread.tokens],
+  );
+
   return (
     <Box display="flex" flexDirection="column" flexGrow={1} mx="auto">
       <Box
@@ -325,13 +348,31 @@ export default function Thread({
           <Box display="flex" flexDirection="column" flexGrow={1} p={0}>
             <Typography variant="h6">{thread.name}</Typography>
             <Typography color="grey" variant="subtitle1">
-              {`${ModelMetadata[thread.model].label} - ${numeral(thread.tokens).format('0.[00]a')} tokens`}
+              {`Total cost: ~$${numeral(cost).format('0.00a')}`}
             </Typography>
           </Box>
+          <Select
+            onChange={({ target }) => {
+              setThreadModel(thread.id, target.value as ModelId);
+            }}
+            sx={{
+              'div:focus': {
+                backgroundColor: 'white',
+              },
+            }}
+            value={thread.model}
+            variant="standard"
+          >
+            {Object.entries(ModelMetadata).map(([modelId, modelMetadata]) => (
+              <MenuItem key={modelId} value={modelId}>
+                {modelMetadata.label}
+              </MenuItem>
+            ))}
+          </Select>
         </Box>
         <Divider />
       </Box>
-      <Container maxWidth="lg" sx={{ flexGrow: 1, p: 2 }}>
+      <Box flexGrow={1} p={2}>
         <Stack spacing={2}>
           {thread.messages.map((message) => (
             <Message key={message.id} message={message} thread={thread} />
@@ -348,7 +389,7 @@ export default function Thread({
           )}
           <Box mt="0px !important" ref={bottomRef} />
         </Stack>
-      </Container>
+      </Box>
       <Input
         inputRef={inputRef}
         jumpButton={

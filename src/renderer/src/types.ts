@@ -89,7 +89,7 @@ export interface ThreadType {
   messages: MessageType[];
   model: ModelId;
   name: string;
-  tokens: number;
+  tokens: Partial<Record<ModelId, { input: number; output: number }>>;
 }
 
 export const DocMimeTypeMapping: Record<string, DocumentFormat> = {

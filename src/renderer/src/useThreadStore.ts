@@ -29,7 +29,13 @@ interface StoreState {
   addMessage: (
     id: ThreadType['id'],
     message: MessageType,
-    tokens?: number,
+    tokenInfo?: {
+      modelId: ModelId;
+      tokens: {
+        input: number;
+        output: number;
+      };
+    },
   ) => void;
   addTokens: (model: ModelId, input: number, output: number) => void;
   awsCredProfile?: string;
@@ -57,19 +63,34 @@ export const useThreadStore = create<StoreState>()(
       addMessage: (
         id: ThreadType['id'],
         message: MessageType,
-        tokens?: number,
+        tokenInfo?: {
+          modelId: ModelId;
+          tokens: {
+            input: number;
+            output: number;
+          };
+        },
       ) => {
         set(({ threads }) => {
           const newThreads = { ...threads };
           const thread = newThreads[id];
           if (!thread) return { threads };
 
+          const newTokens = { ...thread.tokens };
+          if (tokenInfo) {
+            if (!newTokens[tokenInfo.modelId]) {
+              newTokens[tokenInfo.modelId] = tokenInfo.tokens;
+            } else {
+              newTokens[tokenInfo.modelId] = tokenInfo.tokens;
+            }
+          }
+
           newThreads[id] = {
             id,
             messages: thread.messages.concat(message),
             model: thread.model,
             name: thread.name,
-            tokens: tokens ? tokens : thread.tokens,
+            tokens: newTokens,
           };
           return { threads: newThreads };
         });
@@ -95,7 +116,7 @@ export const useThreadStore = create<StoreState>()(
             messages: [message],
             model,
             name: 'New chat',
-            tokens: 0,
+            tokens: {},
           };
           return { threads: newThreads };
         });

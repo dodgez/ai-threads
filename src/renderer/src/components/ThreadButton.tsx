@@ -11,9 +11,9 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import numeral from 'numeral';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
-import type { ThreadType } from '../types';
+import type { ModelId, ThreadType } from '../types';
 import { ModelMetadata } from '../types';
 import { useThreadStore } from '../useThreadStore';
 
@@ -32,6 +32,20 @@ export default function ThreadButton({
   const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
   const [editing, setEditing] = useState(false);
   const [newName, setNewName] = useState(thread.name);
+
+  const cost = useMemo(
+    () =>
+      Object.entries(thread.tokens).reduce(
+        (cost, [modelId, { input, output }]) =>
+          cost +
+          (ModelMetadata[modelId as ModelId].pricing.input * input) /
+            1_000_000 +
+          (ModelMetadata[modelId as ModelId].pricing.output * output) /
+            1_000_000,
+        0,
+      ),
+    [thread.tokens],
+  );
 
   return !editing ? (
     <Box
@@ -78,7 +92,7 @@ export default function ThreadButton({
               }}
               variant="body2"
             >
-              {`${ModelMetadata[thread.model].label} - ${numeral(thread.tokens).format('0.[00]a')} tokens`}
+              {`${ModelMetadata[thread.model].label} ~$${numeral(cost).format('0.00a')}`}
             </Typography>
           </Button>
           <Paper
