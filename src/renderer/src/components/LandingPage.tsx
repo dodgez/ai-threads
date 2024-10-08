@@ -49,13 +49,7 @@ export default function LandingPage({
   const lgMediaQuery = useMediaQuery(theme.breakpoints.up('lg'));
 
   return (
-    <Box
-      display="flex"
-      flexDirection="column"
-      flexGrow={1}
-      height="100%"
-      mx="auto"
-    >
+    <Box display="flex" flexDirection="column" flexGrow={1} mx="auto">
       <Box alignContent="center" flexGrow={1}>
         <Box display="flex" flexDirection="row" justifyContent="space-around">
           <Suggestion

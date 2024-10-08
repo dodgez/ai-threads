@@ -93,7 +93,7 @@ export default function Layout() {
   }
 
   return (
-    <Box display="flex" height="100vh" minHeight="fit-content">
+    <Box display="flex" minHeight="100vh">
       <Drawer
         anchor="left"
         sx={{
