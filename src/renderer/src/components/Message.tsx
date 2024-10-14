@@ -21,7 +21,13 @@ import Synthesizer from './Synthesizer';
 import type { MessageType, ThreadType } from '../types';
 import { useThreadStore } from '../useThreadStore';
 
-const { shell } = window.require('electron');
+const { shell } = (window.require as NodeRequire | undefined)
+  ? window.require('electron')
+  : {
+      shell: {
+        openExternal: (href: string) => window.open(href, '_blank'),
+      },
+    };
 
 function Content({
   contentBlock,

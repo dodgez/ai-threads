@@ -10,16 +10,13 @@ import MicrophoneStream from 'microphone-stream';
 import { enqueueSnackbar } from 'notistack';
 import { useCallback, useRef, useState } from 'react';
 
-import { useThreadStore } from '../useThreadStore';
-
-const { ipcRenderer } = window.require('electron');
+import useGetCreds from '../useGetCreds';
 
 export default function Transcriber({
   onVoiceData,
 }: {
   onVoiceData: (transcript: string) => void;
 }) {
-  const awsCredProfile = useThreadStore((state) => state.awsCredProfile);
   const [isRecording, setIsRecording] = useState(false);
   const stream = useRef<MicrophoneStream>();
 
@@ -31,15 +28,14 @@ export default function Transcriber({
     }
   }, [stream]);
 
+  const getCreds = useGetCreds();
   const startRecording = useCallback(async () => {
-    const creds = (await ipcRenderer
-      .invoke('creds', awsCredProfile)
-      .catch((e: unknown) => {
-        enqueueSnackbar(`Error getting credentials: ${JSON.stringify(e)}`, {
-          autoHideDuration: 3000,
-          variant: 'error',
-        });
-      })) as AwsCredentialIdentity | undefined;
+    const creds = (await getCreds().catch((e: unknown) => {
+      enqueueSnackbar(`Error getting credentials: ${JSON.stringify(e)}`, {
+        autoHideDuration: 3000,
+        variant: 'error',
+      });
+    })) as AwsCredentialIdentity | undefined;
     if (!creds) return;
 
     const client = new TranscribeStreamingClient({
@@ -125,7 +121,7 @@ export default function Transcriber({
       );
       stopRecording();
     }
-  }, [awsCredProfile, onVoiceData, stopRecording]);
+  }, [getCreds, onVoiceData, stopRecording]);
 
   return (
     <IconButton onClick={isRecording ? stopRecording : startRecording}>

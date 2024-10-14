@@ -68,8 +68,8 @@ export const ModelMetadata: Record<ModelId, ModelMetadataInfo> = {
   [ModelId.GPT4o]: {
     label: 'GPT-4o',
     pricing: {
-      input: 5,
-      output: 15,
+      input: 2.5,
+      output: 10,
     },
     provider: Provider.OpenAI,
     supportsDocs: false,

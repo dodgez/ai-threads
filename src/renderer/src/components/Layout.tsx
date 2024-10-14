@@ -39,6 +39,12 @@ export default function Layout() {
   const [activeThreadId, setActiveThreadId] = useState<ThreadType['id']>();
   const activeThread = activeThreadId ? threads[activeThreadId] : undefined;
   const tokens = useThreadStore((state) => state.tokens);
+  const useAwsCredProfile = useThreadStore((state) => state.useAwsCredProfile);
+  const setUseAwsCredProfile = useThreadStore(
+    (state) => state.setUseAwsCredProfile,
+  );
+  const awsCreds = useThreadStore((state) => state.awsCreds);
+  const setAwsCreds = useThreadStore((state) => state.setAwsCreds);
 
   // Pass to the thread to trigger call during screen transition
   const [lastCreatedThreadId, setLastCreatedThreadId] =
@@ -51,24 +57,18 @@ export default function Layout() {
 
   const [modalOpen, setModalOpen] = useState(false);
 
-  const usage = useMemo(
+  const cost = useMemo(
     () =>
-      Object.keys(tokens).reduce(
-        ({ cost, inputTokens, outputTokens }, key: string) => {
-          const modelId = key as ModelId;
-          return {
-            cost:
-              cost +
-              (ModelMetadata[modelId].pricing.input * tokens[modelId].input) /
-                1_000_000 +
-              (ModelMetadata[modelId].pricing.output * tokens[modelId].output) /
-                1_000_000,
-            inputTokens: inputTokens + tokens[modelId].input,
-            outputTokens: outputTokens + tokens[modelId].output,
-          };
-        },
-        { cost: 0, inputTokens: 0, outputTokens: 0 },
-      ),
+      Object.keys(tokens).reduce((cost, key: string) => {
+        const modelId = key as ModelId;
+        return (
+          cost +
+          (ModelMetadata[modelId].pricing.input * tokens[modelId].input) /
+            1_000_000 +
+          (ModelMetadata[modelId].pricing.output * tokens[modelId].output) /
+            1_000_000
+        );
+      }, 0),
     [tokens],
   );
 
@@ -157,9 +157,7 @@ export default function Layout() {
         </Stack>
         <Box color="gray" mb={0.5} mx="auto">
           <Typography variant="caption">
-            {numeral(usage.inputTokens).format('0.[00]a')}/
-            {numeral(usage.outputTokens).format('0.[00]a')} tokens (in/out) ~$
-            {numeral(usage.cost).format('0.00a')}
+            {`Total cost: ~$${numeral(cost).format('0.00a')}`}
           </Typography>
         </Box>
       </Drawer>
@@ -205,17 +203,79 @@ export default function Layout() {
             <Typography textAlign="center" variant="h6">
               AWS configuration
             </Typography>
-            <TextField
-              label="AWS credentials profile"
-              onChange={({ target }) => {
-                if (target.value === '') {
-                  setAwsCredProfile(undefined);
-                } else {
-                  setAwsCredProfile(target.value);
+            <Box display="flex">
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={useAwsCredProfile}
+                    onChange={({ target }) => {
+                      setUseAwsCredProfile(target.checked);
+                    }}
+                  />
                 }
-              }}
-              value={awsCredProfile ?? 'default'}
-            />
+                label="Use AWS Cred Profile"
+                labelPlacement="start"
+                sx={{ flexGrow: 1 }}
+              />
+              <Tooltip
+                title={
+                  <Typography>
+                    Use AWS credential profile or manually input access key id
+                    and secret access key.
+                  </Typography>
+                }
+              >
+                <IconButton>
+                  <HelpOutline />
+                </IconButton>
+              </Tooltip>
+            </Box>
+            {useAwsCredProfile ? (
+              <TextField
+                label="AWS credentials profile"
+                onChange={({ target }) => {
+                  if (target.value === '') {
+                    setAwsCredProfile(undefined);
+                  } else {
+                    setAwsCredProfile(target.value);
+                  }
+                }}
+                value={awsCredProfile ?? 'default'}
+              />
+            ) : (
+              <>
+                <TextField
+                  error={!awsCreds?.accessKeyId}
+                  helperText={
+                    !awsCreds?.accessKeyId && 'Access key id is required'
+                  }
+                  label="AWS access key id"
+                  onChange={({ target }) => {
+                    console.log(target.value, awsCreds?.accessKeyId);
+                    setAwsCreds({
+                      accessKeyId: target.value,
+                      secretAccessKey: awsCreds?.secretAccessKey ?? '',
+                    });
+                  }}
+                  value={awsCreds?.accessKeyId ?? ''}
+                />
+                <TextField
+                  error={!awsCreds?.secretAccessKey}
+                  helperText={
+                    !awsCreds?.secretAccessKey &&
+                    'Secret access key is required'
+                  }
+                  label="AWS secret access key"
+                  onChange={({ target }) => {
+                    setAwsCreds({
+                      accessKeyId: awsCreds?.accessKeyId ?? '',
+                      secretAccessKey: target.value,
+                    });
+                  }}
+                  value={awsCreds?.secretAccessKey ?? ''}
+                />
+              </>
+            )}
             <Divider />
             <Typography textAlign="center" variant="h6">
               OpenAI configuration

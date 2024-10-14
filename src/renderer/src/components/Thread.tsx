@@ -1,9 +1,5 @@
 import { createAmazonBedrock } from '@ai-sdk/amazon-bedrock';
 import { createOpenAI } from '@ai-sdk/openai';
-import {
-  GetSecretValueCommand,
-  SecretsManagerClient,
-} from '@aws-sdk/client-secrets-manager';
 import ArrowDownward from '@mui/icons-material/ArrowDownward';
 import Menu from '@mui/icons-material/Menu';
 import Box from '@mui/material/Box';
@@ -25,6 +21,7 @@ import { v4 as uuid } from 'uuid';
 
 import Input from './Input';
 import Message from './Message';
+import getSecretKey from '../getSecretKey';
 import type {
   FilePart,
   ImagePart,
@@ -34,9 +31,8 @@ import type {
   ThreadType,
 } from '../types';
 import { ModelMetadata, Provider } from '../types';
+import useGetCreds from '../useGetCreds';
 import { useThreadStore } from '../useThreadStore';
-
-const { ipcRenderer } = window.require('electron');
 
 function isScrolledBottom() {
   const scrollPosition = window.scrollY;
@@ -46,29 +42,6 @@ function isScrolledBottom() {
 
   const scrollThreshold = 110;
   return documentHeight - (scrollPosition + windowHeight) <= scrollThreshold;
-}
-
-async function getSecretKey(
-  name: string,
-  creds: AwsCredentialIdentity,
-  defaultKey?: string,
-): Promise<string | undefined> {
-  if (defaultKey) return defaultKey;
-
-  const client = new SecretsManagerClient({
-    credentials: creds,
-    region: 'us-west-2',
-  });
-  const command = new GetSecretValueCommand({
-    SecretId: 'ai-threads/api-keys',
-  });
-  const apiKeyResponse = await client.send(command);
-  const secrets: Record<string, string | undefined> =
-    apiKeyResponse.SecretString
-      ? (JSON.parse(apiKeyResponse.SecretString) as Record<string, string>)
-      : {};
-
-  return secrets[name];
 }
 
 export default function Thread({
@@ -84,7 +57,6 @@ export default function Thread({
 }) {
   const addMessage = useThreadStore((state) => state.addMessage);
   const addTokens = useThreadStore((state) => state.addTokens);
-  const awsCredProfile = useThreadStore((state) => state.awsCredProfile);
   const openAIKey = useThreadStore((state) => state.openAIKey);
   const setThreadModel = useThreadStore((state) => state.setThreadModel);
   const [streamingResponse, setStreamingResponse] = useState<{
@@ -124,6 +96,7 @@ export default function Thread({
     };
   }, [jumpBottomListener, thread.id]);
 
+  const getCreds = useGetCreds();
   const sendMessages = useCallback(
     async (messages: CoreMessage[]) => {
       const cleanup = () => {
@@ -139,14 +112,12 @@ export default function Thread({
         }, 0);
       };
 
-      const creds = (await ipcRenderer
-        .invoke('creds', awsCredProfile)
-        .catch((e: unknown) => {
-          enqueueSnackbar(`Error getting credentials: ${JSON.stringify(e)}`, {
-            autoHideDuration: 3000,
-            variant: 'error',
-          });
-        })) as AwsCredentialIdentity | undefined;
+      const creds = (await getCreds().catch((e: unknown) => {
+        enqueueSnackbar(`Error getting credentials: ${JSON.stringify(e)}`, {
+          autoHideDuration: 3000,
+          variant: 'error',
+        });
+      })) as AwsCredentialIdentity | undefined;
 
       if (!creds) {
         cleanup();
@@ -263,7 +234,7 @@ export default function Thread({
     [
       addMessage,
       addTokens,
-      awsCredProfile,
+      getCreds,
       jumpBottomListener,
       openAIKey,
       thread.id,

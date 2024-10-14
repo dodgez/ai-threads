@@ -1,20 +1,19 @@
-import {
-  BedrockRuntimeClient,
-  ConversationRole,
-  ConverseCommand,
-} from '@aws-sdk/client-bedrock-runtime';
+import { createAmazonBedrock } from '@ai-sdk/amazon-bedrock';
+import { createOpenAI } from '@ai-sdk/openai';
 import type { AwsCredentialIdentity } from '@smithy/types';
-import type { TextPart } from 'ai';
+import type { LanguageModel, TextPart } from 'ai';
+import { generateText } from 'ai';
 import { del, get, set } from 'idb-keyval';
+import { enqueueSnackbar } from 'notistack';
 import { v4 as uuid } from 'uuid';
 import { create } from 'zustand';
 import type { StateStorage } from 'zustand/middleware';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
+import getSecretKey from './getSecretKey';
 import type { MessageType, ThreadType } from './types';
-import { ModelId } from './types';
-
-const { ipcRenderer } = window.require('electron');
+import { ModelId, ModelMetadata, Provider } from './types';
+import { getCreds } from './useGetCreds';
 
 const storage: StateStorage = {
   getItem: async (name: string): Promise<string | null> =>
@@ -24,7 +23,7 @@ const storage: StateStorage = {
     set(name, value),
 };
 
-interface StoreState {
+export interface StoreState {
   _hasHydrated: boolean;
   addMessage: (
     id: ThreadType['id'],
@@ -39,6 +38,7 @@ interface StoreState {
   ) => void;
   addTokens: (model: ModelId, input: number, output: number) => void;
   awsCredProfile?: string;
+  awsCreds?: AwsCredentialIdentity;
   closeDrawer: boolean;
   createThread: (message: MessageType, model: ModelId) => ThreadType['id'];
   deleteThread: (id: ThreadType['id']) => void;
@@ -47,13 +47,16 @@ interface StoreState {
   removeMessage: (id: ThreadType['id'], messageId: MessageType['id']) => void;
   renameThread: (id: ThreadType['id'], name: string) => void;
   setAwsCredProfile: (state?: string) => void;
+  setAwsCreds: (state?: AwsCredentialIdentity) => void;
   setCloseDrawer: (state: boolean) => void;
   setHasHydrated: (state: boolean) => void;
   setOpenAIKey: (key?: string) => void;
   setPlaybackSpeed: (playbackSpeed: number) => void;
   setThreadModel: (id: ThreadType['id'], model: ModelId) => void;
+  setUseAwsCredProfile: (state: boolean) => void;
   threads: Record<ThreadType['id'], ThreadType | undefined>;
   tokens: Record<ModelId, { input: number; output: number }>;
+  useAwsCredProfile?: boolean;
 }
 
 export const useThreadStore = create<StoreState>()(
@@ -106,6 +109,7 @@ export const useThreadStore = create<StoreState>()(
         });
       },
       awsCredProfile: undefined,
+      awsCreds: undefined,
       closeDrawer: false,
       createThread: (message: MessageType, model: ModelId) => {
         const id = uuid();
@@ -122,38 +126,88 @@ export const useThreadStore = create<StoreState>()(
         });
 
         void (async () => {
+          const defaultName = 'New chat';
           const firstMessage =
             typeof message.content === 'string'
               ? message.content
               : (message.content[0] as TextPart | undefined)?.text;
-          if (!firstMessage) return 'New chat';
-          const messages = [
-            {
-              content: [
-                {
-                  text: `Based on this opening question: "${firstMessage}", what would be a concise and descriptive name for this conversation thread? Only provide the name, not any other information or explanation. Do not put quotes around the name.`,
+          if (!firstMessage) return defaultName;
+
+          const state = get();
+          const creds = await getCreds(
+            state.awsCredProfile,
+            state.awsCreds,
+            state.useAwsCredProfile,
+          );
+          if (!creds) {
+            enqueueSnackbar(
+              'An unexpected error occurred while retrieving credentials.',
+              {
+                autoHideDuration: 3000,
+                variant: 'error',
+              },
+            );
+            return defaultName;
+          }
+
+          let modelClient: LanguageModel;
+          switch (ModelMetadata[model].provider) {
+            case Provider.AmazonBedrock: {
+              const bedrock = createAmazonBedrock({
+                bedrockOptions: {
+                  credentials: creds,
+                  region: 'us-west-2',
                 },
-              ],
-              role: ConversationRole.USER,
-            },
-          ];
-          const profile = get().awsCredProfile;
-          const creds = (await ipcRenderer.invoke(
-            'creds',
-            profile,
-          )) as AwsCredentialIdentity;
+              });
+              modelClient = bedrock(model);
+              break;
+            }
+            case Provider.OpenAI: {
+              const apiKey = await getSecretKey(
+                'openai',
+                creds,
+                get().openAIKey,
+              ).catch(() => {
+                enqueueSnackbar(
+                  'An unexpected error occurred while retrieving OpenAI API key from AWS Secrets Manager.',
+                  {
+                    autoHideDuration: 3000,
+                    variant: 'error',
+                  },
+                );
+                return;
+              });
+              if (!apiKey) {
+                enqueueSnackbar('No OpenAI API key provided or found.', {
+                  autoHideDuration: 3000,
+                  variant: 'error',
+                });
+                return defaultName;
+              }
+              const openAI = createOpenAI({
+                apiKey: apiKey,
+                compatibility: 'strict',
+              });
+              modelClient = openAI(model);
+              break;
+            }
+          }
 
-          const client = new BedrockRuntimeClient({
-            credentials: creds,
-            region: 'us-west-2',
+          const { text } = await generateText({
+            messages: [
+              {
+                content: [
+                  {
+                    text: `Based on this opening question: "${firstMessage}", what would be a concise and descriptive name for this conversation thread? Only provide the name, not any other information or explanation. Do not put quotes around the name.`,
+                    type: 'text',
+                  },
+                ],
+                role: 'user',
+              },
+            ],
+            model: modelClient,
           });
-          const command = new ConverseCommand({
-            messages,
-            modelId: ModelId.Claude3Haiku,
-          });
-
-          const { output } = await client.send(command);
-          return output?.message?.content?.[0]?.text ?? 'New chat';
+          return text;
         })().then((name) => {
           set(({ threads }) => {
             const newThreads = { ...threads };
@@ -207,6 +261,9 @@ export const useThreadStore = create<StoreState>()(
       setAwsCredProfile: (state?: string) => {
         set({ awsCredProfile: state });
       },
+      setAwsCreds: (state?: AwsCredentialIdentity) => {
+        set({ awsCreds: state });
+      },
       setCloseDrawer: (state: boolean) => {
         set({ closeDrawer: state });
       },
@@ -227,6 +284,9 @@ export const useThreadStore = create<StoreState>()(
           newThreads[id] = { ...newThreads[id], model };
           return { threads: newThreads };
         });
+      },
+      setUseAwsCredProfile(state: boolean) {
+        set({ useAwsCredProfile: state });
       },
       threads: {},
       tokens: {
@@ -251,6 +311,7 @@ export const useThreadStore = create<StoreState>()(
           output: 0,
         },
       },
+      useAwsCredProfile: true,
     }),
     {
       name: 'ai-threads',
@@ -262,11 +323,13 @@ export const useThreadStore = create<StoreState>()(
           Object.entries(state).filter(([key]) =>
             [
               'awsCredProfile',
+              'awsCreds',
               'closeDrawer',
               'openAIKey',
               'playbackSpeed',
               'threads',
               'tokens',
+              'useAwsCredProfile',
             ].includes(key),
           ),
         ),

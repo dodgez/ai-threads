@@ -14,26 +14,22 @@ import type { AwsCredentialIdentity } from '@smithy/types';
 import { enqueueSnackbar } from 'notistack';
 import { useCallback, useState } from 'react';
 
-import { useThreadStore } from '../useThreadStore';
-
-const { ipcRenderer } = window.require('electron');
+import useGetCreds from '../useGetCreds';
 
 export default function Synthesizer({ text }: { text: string }) {
-  const awsCredProfile = useThreadStore((state) => state.awsCredProfile);
   const [audioContext, setAudioContext] = useState<AudioContext>();
   const [audioSource, setAudioSource] = useState<AudioBufferSourceNode>();
   const [isPlaying, setPlaying] = useState(false);
 
+  const getCreds = useGetCreds();
   const synthesizeSpeech = useCallback(async () => {
     if (isPlaying) return;
-    const creds = (await ipcRenderer
-      .invoke('creds', awsCredProfile)
-      .catch((e: unknown) => {
-        enqueueSnackbar(`Error getting credentials: ${JSON.stringify(e)}`, {
-          autoHideDuration: 3000,
-          variant: 'error',
-        });
-      })) as AwsCredentialIdentity | undefined;
+    const creds = (await getCreds().catch((e: unknown) => {
+      enqueueSnackbar(`Error getting credentials: ${JSON.stringify(e)}`, {
+        autoHideDuration: 3000,
+        variant: 'error',
+      });
+    })) as AwsCredentialIdentity | undefined;
     if (!creds) {
       enqueueSnackbar('Unknown getting credentials.', {
         autoHideDuration: 3000,
@@ -106,7 +102,7 @@ export default function Synthesizer({ text }: { text: string }) {
         variant: 'error',
       });
     }
-  }, [awsCredProfile, isPlaying, text]);
+  }, [getCreds, isPlaying, text]);
 
   const stopPlayback = useCallback(() => {
     if (audioSource) {
