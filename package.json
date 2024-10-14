@@ -7,16 +7,19 @@
   "version": "0.0.0",
   "main": "./out/main/index.js",
   "scripts": {
-    "build": "electron-vite build && electron-builder --mac",
+    "build": "electron-vite build",
+    "build:linux": "electron-builder --linux",
+    "build:mac": "electron-builder --mac",
+    "build:win": "electron-builder --win",
     "check": "tsc && npm run format:check && npm run lint",
     "dev": "electron-vite dev",
-    "electron:dev": "npm run dev & electron .",
-    "electron": "electron dist",
+    "dev:web": "vite dev",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "prebuild": "npm run check",
     "preview": "electron-vite preview",
+    "preview:web": "vite preview --outDir out/renderer",
     "start": "electron-vite dev"
   },
   "dependencies": {
