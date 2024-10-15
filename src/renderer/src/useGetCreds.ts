@@ -9,7 +9,7 @@ export async function getCreds(
   useAwsCredProfile: StoreState['useAwsCredProfile'],
 ): Promise<AwsCredentialIdentity | undefined> {
   const { ipcRenderer } =
-    (window.require as NodeRequire | undefined) && useAwsCredProfile
+    typeof window.require === 'function' && useAwsCredProfile
       ? window.require('electron')
       : {
           ipcRenderer: {

@@ -203,34 +203,36 @@ export default function Layout() {
             <Typography textAlign="center" variant="h6">
               AWS configuration
             </Typography>
-            <Box display="flex">
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={useAwsCredProfile}
-                    onChange={({ target }) => {
-                      setUseAwsCredProfile(target.checked);
-                    }}
-                  />
-                }
-                label="Use AWS Cred Profile"
-                labelPlacement="start"
-                sx={{ flexGrow: 1 }}
-              />
-              <Tooltip
-                title={
-                  <Typography>
-                    Use AWS credential profile or manually input access key id
-                    and secret access key.
-                  </Typography>
-                }
-              >
-                <IconButton>
-                  <HelpOutline />
-                </IconButton>
-              </Tooltip>
-            </Box>
-            {useAwsCredProfile ? (
+            {typeof window.require === 'function' && (
+              <Box display="flex">
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={useAwsCredProfile}
+                      onChange={({ target }) => {
+                        setUseAwsCredProfile(target.checked);
+                      }}
+                    />
+                  }
+                  label="Use AWS Cred Profile"
+                  labelPlacement="start"
+                  sx={{ flexGrow: 1 }}
+                />
+                <Tooltip
+                  title={
+                    <Typography>
+                      Use AWS credential profile or manually input access key id
+                      and secret access key.
+                    </Typography>
+                  }
+                >
+                  <IconButton>
+                    <HelpOutline />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            )}
+            {useAwsCredProfile && typeof window.require === 'function' ? (
               <TextField
                 label="AWS credentials profile"
                 onChange={({ target }) => {

@@ -311,7 +311,7 @@ export const useThreadStore = create<StoreState>()(
           output: 0,
         },
       },
-      useAwsCredProfile: true,
+      useAwsCredProfile: typeof window.require === 'function',
     }),
     {
       name: 'ai-threads',

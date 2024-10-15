@@ -303,6 +303,7 @@ export default function Thread({
         position="sticky"
         sx={{ backgroundColor: (theme) => theme.palette.background.default }}
         top={0}
+        zIndex={1}
       >
         <Box alignItems="center" display="flex" pl={drawerOpen ? 1 : 0}>
           {!drawerOpen && (
