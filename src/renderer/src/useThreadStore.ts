@@ -39,7 +39,6 @@ export interface StoreState {
   addTokens: (model: ModelId, input: number, output: number) => void;
   awsCredProfile?: string;
   awsCreds?: AwsCredentialIdentity;
-  closeDrawer: boolean;
   createThread: (message: MessageType, model: ModelId) => ThreadType['id'];
   deleteThread: (id: ThreadType['id']) => void;
   openAIKey?: string;
@@ -48,7 +47,6 @@ export interface StoreState {
   renameThread: (id: ThreadType['id'], name: string) => void;
   setAwsCredProfile: (state?: string) => void;
   setAwsCreds: (state?: AwsCredentialIdentity) => void;
-  setCloseDrawer: (state: boolean) => void;
   setHasHydrated: (state: boolean) => void;
   setOpenAIKey: (key?: string) => void;
   setPlaybackSpeed: (playbackSpeed: number) => void;
@@ -110,7 +108,6 @@ export const useThreadStore = create<StoreState>()(
       },
       awsCredProfile: undefined,
       awsCreds: undefined,
-      closeDrawer: false,
       createThread: (message: MessageType, model: ModelId) => {
         const id = uuid();
         set(({ threads }) => {
@@ -264,9 +261,6 @@ export const useThreadStore = create<StoreState>()(
       setAwsCreds: (state?: AwsCredentialIdentity) => {
         set({ awsCreds: state });
       },
-      setCloseDrawer: (state: boolean) => {
-        set({ closeDrawer: state });
-      },
       setHasHydrated: (state: boolean) => {
         set({ _hasHydrated: state });
       },
@@ -324,7 +318,6 @@ export const useThreadStore = create<StoreState>()(
             [
               'awsCredProfile',
               'awsCreds',
-              'closeDrawer',
               'openAIKey',
               'playbackSpeed',
               'threads',

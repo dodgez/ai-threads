@@ -6,6 +6,7 @@ import Link from '@mui/material/Link';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import type {
   FilePart,
   ImagePart,
@@ -83,6 +84,8 @@ export default function Message({
       ? message.content
       : (message.content[0] as TextPart | undefined)?.text;
 
+  const canHover = useMediaQuery('@media (hover: hover)');
+
   return message.role === 'user' ? (
     <Box
       alignItems="center"
@@ -98,7 +101,10 @@ export default function Message({
     >
       <IconButton
         onClick={onRemove}
-        sx={{ visibility: isHovered && !isFirst ? 'visible' : 'hidden' }}
+        sx={{
+          visibility:
+            (isHovered || !canHover) && !isFirst ? 'visible' : 'hidden',
+        }}
       >
         <Delete />
       </IconButton>
@@ -167,7 +173,12 @@ export default function Message({
           {messageText ?? ''}
         </ReactMarkdown>
       </Paper>
-      <Box sx={{ visibility: isHovered && message.id ? 'visible' : 'hidden' }}>
+      <Box
+        sx={{
+          visibility:
+            (isHovered || !canHover) && message.id ? 'visible' : 'hidden',
+        }}
+      >
         {messageText && <Synthesizer text={messageText} />}
         <IconButton onClick={onRemove}>
           <Delete />

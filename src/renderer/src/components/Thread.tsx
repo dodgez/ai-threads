@@ -1,7 +1,6 @@
 import { createAmazonBedrock } from '@ai-sdk/amazon-bedrock';
 import { createOpenAI } from '@ai-sdk/openai';
 import ArrowDownward from '@mui/icons-material/ArrowDownward';
-import Menu from '@mui/icons-material/Menu';
 import Box from '@mui/material/Box';
 import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
@@ -14,7 +13,6 @@ import type { CoreMessage, LanguageModel } from 'ai';
 import { streamText } from 'ai';
 import { enqueueSnackbar } from 'notistack';
 import numeral from 'numeral';
-import type { Dispatch, SetStateAction } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { throttle } from 'throttle-debounce';
 import { v4 as uuid } from 'uuid';
@@ -46,13 +44,9 @@ function isScrolledBottom() {
 
 export default function Thread({
   created,
-  drawerOpen,
-  setDrawerOpen,
   thread,
 }: {
   created: boolean;
-  drawerOpen: boolean;
-  setDrawerOpen: Dispatch<SetStateAction<boolean>>;
   thread: ThreadType;
 }) {
   const addMessage = useThreadStore((state) => state.addMessage);
@@ -305,18 +299,7 @@ export default function Thread({
         top={0}
         zIndex={1}
       >
-        <Box alignItems="center" display="flex" pl={drawerOpen ? 1 : 0}>
-          {!drawerOpen && (
-            <Box>
-              <IconButton
-                onClick={() => {
-                  setDrawerOpen(true);
-                }}
-              >
-                <Menu />
-              </IconButton>
-            </Box>
-          )}
+        <Box alignItems="center" display="flex" pl={1} pr={1}>
           <Box display="flex" flexDirection="column" flexGrow={1} p={0}>
             <Typography variant="h6">{thread.name}</Typography>
             <Typography color="grey" variant="subtitle1">
@@ -329,7 +312,7 @@ export default function Thread({
             }}
             sx={{
               'div:focus': {
-                backgroundColor: 'white',
+                backgroundColor: (theme) => theme.palette.background.default,
               },
             }}
             value={thread.model}

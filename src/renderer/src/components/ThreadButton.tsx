@@ -6,7 +6,6 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
 import IconButton from '@mui/material/IconButton';
-import Paper from '@mui/material/Paper';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import useMediaQuery from '@mui/material/useMediaQuery';
@@ -46,6 +45,8 @@ export default function ThreadButton({
       ),
     [thread.tokens],
   );
+
+  const canHover = useMediaQuery('@media (hover: hover)');
 
   return !editing ? (
     <Box
@@ -95,13 +96,12 @@ export default function ThreadButton({
               {`${ModelMetadata[thread.model].label} ~$${numeral(cost).format('0.00a')}`}
             </Typography>
           </Button>
-          <Paper
+          <Box
             sx={{
-              backgroundColor: (theme) => theme.palette.background.default,
               display: 'inline-flex',
               flexDirection: 'column',
               justifyContent: 'space-evenly',
-              visibility: hovered ? 'visible' : 'hidden',
+              visibility: hovered || !canHover ? 'visible' : 'hidden',
             }}
           >
             <IconButton
@@ -122,7 +122,7 @@ export default function ThreadButton({
             >
               <Delete />
             </IconButton>
-          </Paper>
+          </Box>
         </Box>
       </Box>
     </Box>
@@ -144,6 +144,7 @@ export default function ThreadButton({
         >
           <Undo />
         </IconButton>
+        <Divider />
         <IconButton
           onClick={() => {
             renameThread(thread.id, newName);
