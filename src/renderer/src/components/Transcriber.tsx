@@ -36,7 +36,13 @@ export default function Transcriber({
         variant: 'error',
       });
     })) as AwsCredentialIdentity | undefined;
-    if (!creds) return;
+    if (!creds) {
+      enqueueSnackbar('Unknown error getting credentials', {
+        autoHideDuration: 3000,
+        variant: 'error',
+      });
+      return;
+    }
 
     const client = new TranscribeStreamingClient({
       credentials: creds,

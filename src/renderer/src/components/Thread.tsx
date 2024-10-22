@@ -114,6 +114,10 @@ export default function Thread({
       })) as AwsCredentialIdentity | undefined;
 
       if (!creds) {
+        enqueueSnackbar(`Unknown error getting credentials`, {
+          autoHideDuration: 3000,
+          variant: 'error',
+        });
         cleanup();
         return;
       }

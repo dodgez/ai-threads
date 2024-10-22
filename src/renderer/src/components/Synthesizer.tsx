@@ -31,7 +31,7 @@ export default function Synthesizer({ text }: { text: string }) {
       });
     })) as AwsCredentialIdentity | undefined;
     if (!creds) {
-      enqueueSnackbar('Unknown getting credentials.', {
+      enqueueSnackbar('Unknown error getting credentials', {
         autoHideDuration: 3000,
         variant: 'error',
       });

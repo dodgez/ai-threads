@@ -137,13 +137,10 @@ export const useThreadStore = create<StoreState>()(
             state.useAwsCredProfile,
           );
           if (!creds) {
-            enqueueSnackbar(
-              'An unexpected error occurred while retrieving credentials.',
-              {
-                autoHideDuration: 3000,
-                variant: 'error',
-              },
-            );
+            enqueueSnackbar('Unknown error getting credentials', {
+              autoHideDuration: 3000,
+              variant: 'error',
+            });
             return defaultName;
           }
 
