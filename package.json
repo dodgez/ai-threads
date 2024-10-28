@@ -23,7 +23,7 @@
     "start": "electron-vite dev"
   },
   "dependencies": {
-    "@ai-sdk/amazon-bedrock": "https://github.com/dodgez/ai/releases/download/%40ai-sdk%2Famazon-bedrock%401.0.1/amazon-bedrock.tar.gz",
+    "@ai-sdk/amazon-bedrock": "^0.0.33",
     "@ai-sdk/openai": "^0.0.47",
     "@aws-sdk/client-bedrock-runtime": "^3.602.0",
     "@aws-sdk/client-polly": "^3.624.0",
@@ -36,7 +36,7 @@
     "@fontsource/roboto": "^5.0.13",
     "@mui/icons-material": "^5.15.20",
     "@mui/material": "^5.15.20",
-    "ai": "^3.4.9",
+    "ai": "^3.4.23",
     "electron-context-menu": "^4.0.1",
     "idb-keyval": "^6.2.1",
     "microphone-stream": "^6.0.1",
