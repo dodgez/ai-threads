@@ -281,7 +281,15 @@ export const useThreadStore = create<StoreState>()(
       },
       threads: {},
       tokens: {
+        [ModelId.Claude35Haiku]: {
+          input: 0,
+          output: 0,
+        },
         [ModelId.Claude35Sonnet]: {
+          input: 0,
+          output: 0,
+        },
+        [ModelId.Claude35Sonnet2]: {
           input: 0,
           output: 0,
         },

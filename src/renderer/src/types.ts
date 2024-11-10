@@ -18,7 +18,9 @@ export type MessageType = (CoreAssistantMessage | UserMessage) & {
   id: string;
 };
 export enum ModelId {
+  Claude35Haiku = 'anthropic.claude-3-5-haiku-20241022-v1:0',
   Claude35Sonnet = 'anthropic.claude-3-5-sonnet-20240620-v1:0',
+  Claude35Sonnet2 = 'anthropic.claude-3-5-sonnet-20241022-v2:0',
   Claude3Haiku = 'anthropic.claude-3-haiku-20240307-v1:0',
   Claude3Sonnet = 'anthropic.claude-3-sonnet-20240229-v1:0',
   GPT4o = 'gpt-4o',
@@ -38,8 +40,26 @@ interface ModelMetadataInfo {
   supportsDocs: boolean;
 }
 export const ModelMetadata: Record<ModelId, ModelMetadataInfo> = {
+  [ModelId.Claude35Haiku]: {
+    label: 'Claude 3.5 Haiku',
+    pricing: {
+      input: 1,
+      output: 1.5,
+    },
+    provider: Provider.AmazonBedrock,
+    supportsDocs: true,
+  },
   [ModelId.Claude35Sonnet]: {
     label: 'Claude 3.5 Sonnet',
+    pricing: {
+      input: 3,
+      output: 15,
+    },
+    provider: Provider.AmazonBedrock,
+    supportsDocs: false,
+  },
+  [ModelId.Claude35Sonnet2]: {
+    label: 'Claude 3.5 Sonnet v2',
     pricing: {
       input: 3,
       output: 15,
