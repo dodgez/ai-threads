@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "@ai-sdk/amazon-bedrock": "^0.0.33",
-    "@ai-sdk/openai": "^0.0.47",
+    "@ai-sdk/openai": "^1.1.0",
     "@aws-sdk/client-bedrock-runtime": "^3.602.0",
     "@aws-sdk/client-polly": "^3.624.0",
     "@aws-sdk/client-secrets-manager": "^3.632.0",
